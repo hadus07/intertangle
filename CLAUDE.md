@@ -4,12 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Greenfield. As of this writing the repo contains **only docs** — no `src/`, `web/`,
-`package.json`, or tooling yet. The design is locked in the PRD; work is sliced into
-issues. Read these before building:
+Slice 01 (walking skeleton) is in place. The package scaffold, core source modules,
+Vite React frontend, fixtures, and seam tests now exist. Read before building:
 
 - `docs/prd/prd-import-graph-explorer.md` — full design, implementation decisions, locked scaffold decisions, testing seams. Authoritative.
-- `docs/issues/open/NN-*.md` — implementation slices, build in order (01 first). Slice 01 is the walking skeleton.
+- `docs/issues/open/NN-*.md` — implementation slices; pick up at 02 once 01 lands.
 
 ## What interweave is
 
@@ -24,7 +23,7 @@ The whole tool is four units with clean seams — keep logic in these, not in gl
 
 - **`buildGraph`** (`src/`) — runs dependency-cruiser **once** over cwd, returns a normalized in-memory graph: local-file nodes, forward edges (imports), reverse edges (inverted forward = imported-by), per-node external labels (npm/core/unresolved). dependency-cruiser is configured to **not follow `node_modules`**. The graph is a **startup snapshot**; edges are never recomputed during a session.
 - **HTTP server** (`src/`, Node built-in `http`) — serves prebuilt frontend assets plus two routes: `GET /graph` returns the normalized graph as JSON; `GET /file?path=<relative>` reads the file **live from disk** and returns **server-side Shiki-highlighted HTML**. The `/file` handler confines `path` to within the scanned project dir and rejects anything resolving outside it.
-- **`toReactFlow`** (`src/`) — **pure** transform `(graph, expandedSet) → positioned nodes + edges` via elkjs layout. No browser, deterministic, no overlaps. Node identity is the file's project path, so a file reached from multiple cards converges to one node.
+- **Shared graph contract + `toReactFlow`** (`src/shared/`) — the graph type and the pure `(graph, visibleSet) → positioned nodes/edges` transform. Slice 01 uses a simple deterministic layout; elkjs replaces it later.
 - **Frontend** (`web/`, Vite + React + `@xyflow/react`) — the canvas. Custom node component per card. Carries **no** highlighting dependency; it injects the HTML `/file` returns. Layout re-runs on each expansion, anchoring new nodes near the expanded card.
 
 Why a whole-project up-front scan: reverse edges ("imported by") can't be computed
@@ -64,6 +63,8 @@ Chip expansion, fuzzy palette, pan/zoom, and visual highlight correctness are ma
 
 ## Commands
 
-No `package.json` yet. Once scaffolded (slice 01), expect: `npm run build` (tsup + vite),
-`npm test` / `npx vitest run <file>` for a single test, `npx biome check .` for lint.
-Update this section with the real scripts when they land.
+- `npm install` — install deps.
+- `npm run build` — tsup CLI (`dist/cli.js`) then Vite web (`dist/web/`).
+- `npm test` / `npx vitest run <file>` — run tests.
+- `npx biome check .` / `npm run format` — lint / format.
+- `node dist/cli.js <path> [...]` — run the built CLI locally.

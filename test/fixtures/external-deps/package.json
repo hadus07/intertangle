@@ -1,0 +1,8 @@
+{
+  "name": "external-deps-fixture",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.0.0",
+    "lodash": "^4.0.0"
+  }
+}
