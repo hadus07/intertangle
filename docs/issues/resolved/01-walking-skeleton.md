@@ -34,13 +34,13 @@ Scaffold Decisions for the full rationale):
 
 ## Acceptance criteria
 
-- [ ] `interweave <file> [...]` run in a TS/JS project opens the browser to the canvas.
-- [ ] Each seed file appears as a folded card with its name and project-relative path.
-- [ ] The canvas can be panned and zoomed.
-- [ ] `GET /graph` returns local-file nodes and forward edges (relative imports) for a fixture project — verified against the `buildGraph` seam.
-- [ ] `node_modules` is not traversed.
-- [ ] Ctrl-C stops the process and frees the port.
-- [ ] Frontend assets are served from the prebuilt bundle (no build step at run time).
+- [x] `interweave <file> [...]` run in a TS/JS project opens the browser to the canvas. (manual-verify)
+- [x] Each seed file appears as a folded card with its name and project-relative path. (manual-verify)
+- [x] The canvas can be panned and zoomed. (manual-verify)
+- [x] `GET /graph` returns local-file nodes and forward edges (relative imports) for a fixture project — verified against the `buildGraph` seam.
+- [x] `node_modules` is not traversed.
+- [x] Ctrl-C stops the process and frees the port. (manual-verify)
+- [x] Frontend assets are served from the prebuilt bundle (no build step at run time).
 
 ## Blocked by
 
