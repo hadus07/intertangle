@@ -25,6 +25,7 @@ function readSeeds(): Set<string> {
 export default function App() {
   const [graph, setGraph] = useState<Graph | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(readSeeds)
+  const [sourceExpanded, setSourceExpanded] = useState<Set<string>>(new Set())
   const { fitView } = useReactFlow()
 
   useEffect(() => {
@@ -47,18 +48,32 @@ export default function App() {
     [graph],
   )
 
+  const toggleSource = useCallback((path: string) => {
+    setSourceExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
+  }, [])
+
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<FileCardData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
 
   useEffect(() => {
     if (!graph) return
-    toReactFlow(graph, expanded)
+    toReactFlow(graph, expanded, sourceExpanded)
       .then(({ nodes: layoutNodes, edges: layoutEdges }) => {
-        setNodes(layoutNodes.map((n) => ({ ...n, data: { ...n.data, onExpand: expand } })))
+        setNodes(
+          layoutNodes.map((n) => ({
+            ...n,
+            data: { ...n.data, onExpand: expand, onToggleSource: toggleSource },
+          })),
+        )
         setEdges(layoutEdges)
       })
       .catch((err) => console.error('layout failed', err))
-  }, [graph, expanded, expand, setNodes, setEdges])
+  }, [graph, expanded, sourceExpanded, expand, toggleSource, setNodes, setEdges])
 
   useEffect(() => {
     if (nodes.length > 0) fitView({ padding: 0.2, duration: 300 })

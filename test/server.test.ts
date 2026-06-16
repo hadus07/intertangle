@@ -26,6 +26,25 @@ describe('server', () => {
     expect(res.headers.get('content-type')).toContain('text/html')
   })
 
+  it('highlights an in-project source file at /file', async () => {
+    const res = await fetch(`http://127.0.0.1:${handle.port}/file?path=src%2Findex.ts`)
+    const body = await res.text()
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/html')
+    expect(body).toContain('shiki')
+    expect(body).toContain('export')
+  })
+
+  it('rejects path traversal at /file', async () => {
+    const res = await fetch(`http://127.0.0.1:${handle.port}/file?path=..%2Fpackage.json`)
+    expect(res.status).toBe(403)
+  })
+
+  it('rejects absolute out-of-project paths at /file', async () => {
+    const res = await fetch(`http://127.0.0.1:${handle.port}/file?path=%2Fetc%2Fpasswd`)
+    expect(res.status).toBe(403)
+  })
+
   afterAll(async () => {
     await handle?.close()
   })

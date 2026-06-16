@@ -3,6 +3,7 @@ import type { Graph } from './graph.js'
 
 export const CARD_WIDTH = 240
 export const CARD_HEIGHT = 120
+export const CARD_HEIGHT_EXPANDED = 320
 
 export type ExpandDirection = 'imports' | 'importedBy'
 
@@ -11,14 +12,23 @@ export interface FileCardData extends Record<string, unknown> {
   path: string
   importCount: number
   importedByCount: number
+  sourceExpanded?: boolean
   onExpand?(path: string, direction: ExpandDirection): void
+  onToggleSource?(path: string): void
 }
 
-export async function toReactFlow(graph: Graph, visible: Set<string>) {
+export async function toReactFlow(
+  graph: Graph,
+  visible: Set<string>,
+  sourceExpanded?: Set<string>,
+) {
   const nodes: Node<FileCardData>[] = []
   for (const id of [...visible].sort()) {
     const node = graph.nodes[id]
     if (!node) continue
+
+    const isSourceExpanded = sourceExpanded?.has(id) ?? false
+    const height = isSourceExpanded ? CARD_HEIGHT_EXPANDED : CARD_HEIGHT
 
     nodes.push({
       id,
@@ -28,8 +38,9 @@ export async function toReactFlow(graph: Graph, visible: Set<string>) {
         ...node,
         importCount: graph.forward[id]?.length ?? 0,
         importedByCount: graph.reverse[id]?.length ?? 0,
+        sourceExpanded: isSourceExpanded,
       },
-      measured: { width: CARD_WIDTH, height: CARD_HEIGHT },
+      measured: { width: CARD_WIDTH, height },
     })
   }
 
@@ -59,7 +70,7 @@ export async function toReactFlow(graph: Graph, visible: Set<string>) {
     children: nodes.map((n) => ({
       id: n.id,
       width: CARD_WIDTH,
-      height: CARD_HEIGHT,
+      height: n.measured?.height ?? CARD_HEIGHT,
     })),
     edges: edges.map((e) => ({
       id: e.id,

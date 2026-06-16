@@ -19,11 +19,11 @@ Let any card expand to show its full source, syntax-highlighted, read live from 
 
 ## Acceptance criteria
 
-- [ ] Expanding a card shows its full source with TS/JS syntax highlighting.
-- [ ] Source is shown in a height-capped, scrollable box.
-- [ ] Editing a file on disk and re-expanding shows the updated contents.
-- [ ] `GET /file?path=<valid in-project>` returns highlighted HTML.
-- [ ] `GET /file?path=<../escape>` and absolute out-of-project paths are rejected — covered by a security test at the trust boundary.
+- [x] Expanding a card shows its full source with TS/JS syntax highlighting. (manual-verify)
+- [x] Source is shown in a height-capped, scrollable box. (manual-verify)
+- [x] Editing a file on disk and re-expanding shows the updated contents. (manual-verify)
+- [x] `GET /file?path=<valid in-project>` returns highlighted HTML.
+- [x] `GET /file?path=<../escape>` and absolute out-of-project paths are rejected — covered by a security test at the trust boundary.
 
 ## Blocked by
 
