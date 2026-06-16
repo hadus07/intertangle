@@ -27,6 +27,7 @@ export interface ServerHandle {
 export function startServer(
   graph: Graph,
   assetsUrl: URL = defaultAssetsUrl,
+  port = 0,
 ): Promise<ServerHandle> {
   const webRoot = fileURLToPath(assetsUrl)
 
@@ -68,7 +69,7 @@ export function startServer(
   })
 
   return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', () => {
+    server.listen(port, '127.0.0.1', () => {
       const address = server.address()
       const port = typeof address === 'object' && address ? address.port : 0
       resolve({

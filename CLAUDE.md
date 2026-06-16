@@ -68,3 +68,4 @@ Chip expansion, fuzzy palette, pan/zoom, and visual highlight correctness are ma
 - `npm test` / `npx vitest run <file>` — run tests.
 - `npx biome check .` / `npm run format` — lint / format.
 - `node dist/cli.js <path> [...]` — run the built CLI locally.
+- `npm run dev -- <dir>` — start Vite dev with the `/graph` endpoint served by a local plugin scanning `<dir>`.

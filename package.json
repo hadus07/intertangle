@@ -11,6 +11,7 @@
     "build": "npm run build:cli && npm run build:web",
     "build:cli": "tsup",
     "build:web": "vite build web",
+    "dev": "node scripts/dev.js",
     "dev:web": "vite web",
     "test": "vitest run",
     "lint": "biome check .",
