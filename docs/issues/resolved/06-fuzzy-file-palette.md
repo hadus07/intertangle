@@ -18,11 +18,11 @@ root cards at any time.
 
 ## Acceptance criteria
 
-- [ ] Running with no arguments opens an empty canvas with the search palette.
-- [ ] Typing fuzzy-matches against the project's file list.
-- [ ] Selecting a result adds that file as a card.
-- [ ] `Cmd-K` reopens the palette after the canvas already has cards, adding further roots.
-- [ ] No file is auto-seeded without an explicit arg or palette selection.
+- [x] Running with no arguments opens an empty canvas with the search palette. (manual-verify)
+- [x] Typing fuzzy-matches against the project's file list. (manual-verify)
+- [x] Selecting a result adds that file as a card. (manual-verify)
+- [x] `Cmd-K` reopens the palette after the canvas already has cards, adding further roots. (manual-verify)
+- [x] No file is auto-seeded without an explicit arg or palette selection. (manual-verify)
 
 ## Blocked by
 

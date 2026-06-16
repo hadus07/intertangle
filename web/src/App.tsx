@@ -13,6 +13,7 @@ import type { Graph } from '~shared/graph'
 import type { ExpandDirection, FileCardData } from '~shared/toReactFlow'
 import { toReactFlow } from '~shared/toReactFlow'
 import FileCardNode from './FileCardNode'
+import FilePalette from './FilePalette'
 
 const nodeTypes = { fileCard: FileCardNode }
 
@@ -26,6 +27,7 @@ export default function App() {
   const [graph, setGraph] = useState<Graph | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(readSeeds)
   const [sourceExpanded, setSourceExpanded] = useState<Set<string>>(new Set())
+  const [paletteOpen, setPaletteOpen] = useState(() => readSeeds().size === 0)
   const { fitView } = useReactFlow()
 
   useEffect(() => {
@@ -33,6 +35,17 @@ export default function App() {
       .then((r) => r.json())
       .then(setGraph)
       .catch((err) => console.error('failed to load graph', err))
+  }, [])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
   const expand = useCallback(
@@ -94,6 +107,12 @@ export default function App() {
         <Background />
         <Controls />
       </ReactFlow>
+      <FilePalette
+        graph={graph}
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onSelect={(path) => setExpanded((prev) => new Set([...prev, path]))}
+      />
     </div>
   )
 }
