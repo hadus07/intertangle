@@ -5,8 +5,11 @@ import type { ExternalLabel, ExternalLabelType, Graph, GraphNode } from './share
 
 const LOCAL_TYPES = new Set(['local', 'localmodule'])
 
-export async function buildGraph(root: string): Promise<Graph> {
-  const options: ICruiseOptions = {
+export async function buildGraph(root: string, tsconfig?: string): Promise<Graph> {
+  const resolvedTsconfig = tsconfig ?? (fs.existsSync(path.join(root, 'tsconfig.json')) ? path.join(root, 'tsconfig.json') : undefined)
+  const alias = resolvedTsconfig ? tsconfigAlias(resolvedTsconfig) : {}
+
+  const options = {
     baseDir: root,
     outputType: 'json',
     doNotFollow: {
@@ -17,7 +20,9 @@ export async function buildGraph(root: string): Promise<Graph> {
     moduleSystems: ['es6', 'cjs'],
     combinedDependencies: true,
     tsPreCompilationDeps: true,
-  }
+    // ponytail: alias not in dep-cruiser types but supported at runtime
+    ...(Object.keys(alias).length > 0 ? { enhancedResolveOptions: { alias } } : {}),
+  } as ICruiseOptions
 
   const result = await cruise(['.'], options)
   const modules = (JSON.parse(result.output as string) as { modules?: unknown[] }).modules ?? []
@@ -119,6 +124,25 @@ function classifyExternal(types: string[]): ExternalLabelType {
 
 function sortedUnique(arr: string[]): string[] {
   return [...new Set(arr)].sort()
+}
+
+function tsconfigAlias(tsconfigPath: string): Record<string, string> {
+  try {
+    // ponytail: strip // line comments so JSONC tsconfigs parse cleanly
+    const raw = fs.readFileSync(tsconfigPath, 'utf8').replace(/\/\/[^\n]*/g, '')
+    const tc = JSON.parse(raw) as { compilerOptions?: { paths?: Record<string, string[]>; baseUrl?: string } }
+    const paths = tc.compilerOptions?.paths ?? {}
+    const baseUrl = tc.compilerOptions?.baseUrl ?? '.'
+    const dir = path.dirname(tsconfigPath)
+    const alias: Record<string, string> = {}
+    for (const [key, vals] of Object.entries(paths)) {
+      if (!vals[0]) continue
+      alias[key.replace(/\/\*$/, '')] = path.resolve(dir, baseUrl, vals[0].replace(/\/\*$/, ''))
+    }
+    return alias
+  } catch {
+    return {}
+  }
 }
 
 function uniqueLabels(arr: ExternalLabel[]): ExternalLabel[] {

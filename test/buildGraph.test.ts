@@ -38,6 +38,31 @@ describe('buildGraph', () => {
     expect(Object.keys(graph.nodes)).not.toContain('lodash')
   })
 
+  it('resolves path aliases when root tsconfig.json has paths', async () => {
+    const graph = await buildGraph(fixtureRoot('ts-aliases'))
+
+    expect(Object.keys(graph.nodes).sort()).toEqual(['src/index.ts', 'src/utils.ts'])
+    expect(graph.forward['src/index.ts']).toEqual(['src/utils.ts'])
+  })
+
+  it('resolves path aliases when --tsconfig override is given', async () => {
+    const root = fixtureRoot('ts-aliases')
+    const graph = await buildGraph(root, `${root}/tsconfig.json`)
+
+    expect(graph.forward['src/index.ts']).toEqual(['src/utils.ts'])
+  })
+
+  it('runs without error and resolves relative imports when no tsconfig exists', async () => {
+    const graph = await buildGraph(fixtureRoot('relative-imports'), undefined)
+
+    expect(Object.keys(graph.nodes).sort()).toEqual([
+      'src/index.ts',
+      'src/types.ts',
+      'src/utils.ts',
+    ])
+    expect(graph.forward['src/index.ts']).toEqual(['src/types.ts', 'src/utils.ts'])
+  })
+
   it('renders import cycles without dropping edges', async () => {
     const graph = await buildGraph(fixtureRoot('cycle'))
 

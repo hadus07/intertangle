@@ -7,9 +7,13 @@ import { startServer } from './server.js'
 async function main() {
   const cwd = process.cwd()
   const root = process.env.INTERWEAVE_ROOT ?? cwd
-  const args = process.argv.slice(2)
+  const argv = process.argv.slice(2)
 
-  const graph = await buildGraph(root)
+  const tsconfigIdx = argv.indexOf('--tsconfig')
+  const tsconfig = tsconfigIdx !== -1 ? argv[tsconfigIdx + 1] : undefined
+  const args = argv.filter((_, i) => i !== tsconfigIdx && i !== tsconfigIdx + 1)
+
+  const graph = await buildGraph(root, tsconfig)
 
   const seeds = args
     .map((arg) => path.relative(root, path.resolve(root, arg)))
