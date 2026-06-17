@@ -1,5 +1,6 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react'
 import { ArrowDownRight, ArrowUpLeft, Code2, X } from 'lucide-react'
+import { memo } from 'react'
 import type { FileCardData } from '~shared/toReactFlow'
 
 const extClass: Record<string, string> = {
@@ -8,7 +9,10 @@ const extClass: Record<string, string> = {
   unresolved: 'iw-ext-unresolved',
 }
 
-export default function FileCardNode({ data }: NodeProps) {
+// memo: React Flow re-renders every node on any nodes-array change (select, drag,
+// pass-2 reposition). Position/selected updates keep data ref stable, so memo skips
+// the re-render unless this card's own data actually changed.
+function FileCardNode({ data }: NodeProps) {
   const { name, path, importCount, importedByCount, externals, onExpand, onShowSource, onRemove } =
     data as Required<FileCardData>
 
@@ -76,3 +80,5 @@ export default function FileCardNode({ data }: NodeProps) {
     </div>
   )
 }
+
+export default memo(FileCardNode)

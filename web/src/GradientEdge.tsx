@@ -1,9 +1,10 @@
 import { BaseEdge, type EdgeProps, getBezierPath } from '@xyflow/react'
+import { memo } from 'react'
 
 // Gradient encodes import direction: amber (importer) → cyan (imported).
 // userSpaceOnUse + real endpoint coords is required, else the gradient maps to
 // the path bounding box and misaligns on near-vertical/horizontal edges.
-export default function GradientEdge({
+function GradientEdge({
   id,
   sourceX,
   sourceY,
@@ -39,3 +40,5 @@ export default function GradientEdge({
     </>
   )
 }
+
+export default memo(GradientEdge)
