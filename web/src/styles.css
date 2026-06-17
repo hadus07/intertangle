@@ -164,6 +164,12 @@ body {
   flex-shrink: 0;
   width: 14px;
   height: 14px;
+  opacity: 0.3;
+  transition: opacity 0.12s ease;
+}
+.iw-tree-row:hover input[type='checkbox'],
+.iw-tree-row--active input[type='checkbox'] {
+  opacity: 1;
 }
 
 .iw-tree-label {
