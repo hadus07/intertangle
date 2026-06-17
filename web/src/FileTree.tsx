@@ -13,9 +13,22 @@ interface Props {
 const folderPaths = (nodes: TreeNode[]): string[] =>
   nodes.flatMap((n) => (n.isFile ? [] : [n.path, ...folderPaths(n.children)]))
 
+// Folders whose every descendant file is excluded — collapsed by default on load.
+const fullyExcludedFolders = (nodes: TreeNode[], excluded: Set<string>): string[] =>
+  nodes.flatMap((n) =>
+    n.isFile || descendantFiles(n).some((f) => !excluded.has(f))
+      ? n.isFile
+        ? []
+        : fullyExcludedFolders(n.children, excluded)
+      : [n.path],
+  )
+
 export default function FileTree({ paths, excluded, activePath, onSetExcluded, onSeed }: Props) {
   const tree = useMemo(() => buildTree(paths), [paths])
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  // ponytail: seed once from the restored exclusions; user toggles take over after.
+  const [collapsed, setCollapsed] = useState<Set<string>>(
+    () => new Set(fullyExcludedFolders(tree, excluded)),
+  )
 
   const collapseAll = () => setCollapsed(new Set(folderPaths(tree)))
   const expandAll = () => setCollapsed(new Set())
