@@ -154,8 +154,10 @@ export function startServer(
     }
   })
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    server.once('error', reject)
     server.listen(port, '127.0.0.1', () => {
+      server.off('error', reject)
       const address = server.address()
       const port = typeof address === 'object' && address ? address.port : 0
       resolve({

@@ -31,9 +31,14 @@ async function main() {
     console.warn(`Warning: argument not found in graph: ${p}`)
   }
 
+  // Fixed default port keeps a stable origin so the browser's localStorage
+  // (sidebar width, deselected files) survives CLI restarts.
   const portEnv = process.env.INTERWEAVE_PORT
-  const preferredPort = portEnv ? Number.parseInt(portEnv, 10) : 0
-  const { port, close } = await startServer(graph, undefined, preferredPort)
+  const preferredPort = portEnv ? Number.parseInt(portEnv, 10) : 31718
+  const { port, close } = await startServer(graph, undefined, preferredPort).catch(() =>
+    // ponytail: port in use → ephemeral fallback; that session won't persist UI prefs.
+    startServer(graph, undefined, 0),
+  )
 
   const url = new URL('/', `http://127.0.0.1:${port}`)
   if (validSeeds.length > 0) {
