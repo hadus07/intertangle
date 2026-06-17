@@ -1,14 +1,4 @@
-import {
-  Background,
-  BackgroundVariant,
-  Controls,
-  type Edge,
-  type Node,
-  ReactFlow,
-  useEdgesState,
-  useNodesState,
-  useReactFlow,
-} from '@xyflow/react'
+import { Background, BackgroundVariant, Controls, ReactFlow } from '@xyflow/react'
 import { PanelLeft, Search, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -18,13 +8,12 @@ import {
   PanelResizeHandle,
 } from 'react-resizable-panels'
 import type { Graph } from '~shared/graph'
-import type { FileCardData } from '~shared/toReactFlow'
-import { CARD_HEIGHT, toReactFlow } from '~shared/toReactFlow'
 import FileCardNode from './FileCardNode'
 import FilePalette from './FilePalette'
 import FileTree from './FileTree'
 import GradientEdge from './GradientEdge'
 import SourcePanel from './SourcePanel'
+import { useCanvasLayout } from './useCanvasLayout'
 import { useGraphView } from './useGraphView'
 
 const nodeTypes = { fileCard: FileCardNode }
@@ -55,9 +44,12 @@ export default function App() {
   } = useGraphView(graph)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const panelRef = useRef<ImperativePanelHandle>(null)
-  const { fitView, setCenter } = useReactFlow()
-  // Path queued by the sidebar to select + center once it's laid out & measured.
-  const focusRef = useRef<string | null>(null)
+  const { nodes, edges, onNodesChange, onEdgesChange, focus } = useCanvasLayout(
+    graph,
+    expanded,
+    excluded,
+    { onExpand: expand, onShowSource: showSource, onRemove: remove },
+  )
 
   useEffect(() => {
     fetch('/graph')
@@ -66,13 +58,13 @@ export default function App() {
       .catch((err) => console.error('failed to load graph', err))
   }, [])
 
-  // Queues focus, then adds to the visible set; focus centering lives in App.
+  // Queues focus, then adds to the visible set; the hook centers once laid out.
   const seedAndFocus = useCallback(
     (path: string) => {
-      focusRef.current = path
+      focus(path)
       seed(path)
     },
-    [seed],
+    [focus, seed],
   )
 
   const toggleSidebar = useCallback(() => {
@@ -96,72 +88,6 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [toggleSidebar])
-
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<FileCardData>>([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
-
-  // Pass 1 — node/edge existence + data. Preserves prior position and measured
-  // size for surviving nodes so an expand doesn't reset the laid-out canvas.
-  useEffect(() => {
-    if (!graph) return
-    toReactFlow(graph, expanded, undefined, excluded)
-      .then(({ nodes: layoutNodes, edges: layoutEdges }) => {
-        setNodes((prev) => {
-          const prevById = new Map(prev.map((n) => [n.id, n]))
-          return layoutNodes.map((n) => {
-            const old = prevById.get(n.id)
-            return {
-              ...n,
-              position: old?.position ?? n.position,
-              measured: old?.measured ?? n.measured,
-              data: { ...n.data, onExpand: expand, onShowSource: showSource, onRemove: remove },
-            }
-          })
-        })
-        setEdges(layoutEdges)
-      })
-      .catch((err) => console.error('layout failed', err))
-  }, [graph, expanded, excluded, expand, showSource, remove, setNodes, setEdges])
-
-  // Pass 2 — re-layout with the sizes React Flow actually measured, so cards
-  // never overlap regardless of external rows or expanded source length.
-  const laidOutSig = useRef('')
-  useEffect(() => {
-    if (!graph || nodes.length === 0) return
-    const sizes = new Map<string, { width: number; height: number }>()
-    for (const n of nodes) {
-      const { width, height } = n.measured ?? {}
-      if (!width || !height) return // wait until every node is measured
-      sizes.set(n.id, { width, height })
-    }
-    const sig = [...sizes]
-      .map(([id, s]) => `${id}:${s.width}:${s.height}`)
-      .sort()
-      .join('|')
-    if (sig === laidOutSig.current) return
-    laidOutSig.current = sig
-    toReactFlow(graph, expanded, sizes, excluded)
-      .then(({ nodes: laid }) => {
-        const pos = new Map(laid.map((n) => [n.id, n.position]))
-        setNodes((prev) => prev.map((n) => ({ ...n, position: pos.get(n.id) ?? n.position })))
-        fitView({ padding: 0.2, duration: 300 })
-      })
-      .catch((err) => console.error('layout failed', err))
-  }, [nodes, graph, expanded, excluded, setNodes, fitView])
-
-  // Sidebar focus — once the queued node exists and is measured, select it
-  // (others deselected) and center the viewport on it.
-  useEffect(() => {
-    const path = focusRef.current
-    if (!path) return
-    const node = nodes.find((n) => n.id === path)
-    if (!node?.measured?.width) return // wait for layout + measurement
-    focusRef.current = null
-    setNodes((prev) => prev.map((n) => ({ ...n, selected: n.id === path })))
-    const w = node.measured.width
-    const h = node.measured.height ?? CARD_HEIGHT
-    setCenter(node.position.x + w / 2, node.position.y + h / 2, { zoom: 1, duration: 400 })
-  }, [nodes, setNodes, setCenter])
 
   const selectedNodes = nodes.filter((n) => n.selected)
   const selectedPath = selectedNodes.length === 1 ? selectedNodes[0].id : null
