@@ -17,5 +17,8 @@ export default defineConfig({
   build: {
     outDir: '../dist/web',
     emptyOutDir: true,
+    // ponytail: elkjs is a GWT blob (~1.4MB, un-tree-shakeable) but lazy-loaded
+    // in its own chunk via dynamic import — raise the limit past it, not global.
+    chunkSizeWarningLimit: 1500,
   },
 })
