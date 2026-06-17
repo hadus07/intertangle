@@ -145,6 +145,7 @@ export default function App() {
             onEdgesChange={onEdgesChange}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            minZoom={0.05}
             fitView
           >
             <Background
