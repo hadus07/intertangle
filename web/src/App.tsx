@@ -44,11 +44,12 @@ export default function App() {
   } = useGraphView(graph)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const panelRef = useRef<ImperativePanelHandle>(null)
-  const { nodes, edges, onNodesChange, onEdgesChange, focus } = useCanvasLayout(
+  const { nodes, edges, onNodesChange, onEdgesChange, focusOn } = useCanvasLayout(
     graph,
     expanded,
     excluded,
     { onExpand: expand, onShowSource: showSource, onRemove: remove },
+    seed,
   )
 
   useEffect(() => {
@@ -57,15 +58,6 @@ export default function App() {
       .then(setGraph)
       .catch((err) => console.error('failed to load graph', err))
   }, [])
-
-  // Queues focus, then adds to the visible set; the hook centers once laid out.
-  const seedAndFocus = useCallback(
-    (path: string) => {
-      focus(path)
-      seed(path)
-    },
-    [focus, seed],
-  )
 
   const toggleSidebar = useCallback(() => {
     const panel = panelRef.current
@@ -121,7 +113,7 @@ export default function App() {
           excluded={excluded}
           activePath={selectedPath}
           onSetExcluded={setExclusion}
-          onSeed={seedAndFocus}
+          onSeed={focusOn}
         />
       </Panel>
       <PanelResizeHandle className="iw-resize-handle" />
@@ -178,7 +170,7 @@ export default function App() {
         excluded={excluded}
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
-        onSelect={seedAndFocus}
+        onSelect={focusOn}
       />
     </PanelGroup>
   )

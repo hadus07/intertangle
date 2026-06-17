@@ -17,6 +17,7 @@ export function useCanvasLayout(
   expanded: Set<string>,
   excluded: Set<string>,
   { onExpand, onShowSource, onRemove }: CardHandlers,
+  seed: (path: string) => void,
 ) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<FileCardData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -89,9 +90,15 @@ export function useCanvasLayout(
     setCenter(node.position.x + w / 2, node.position.y + h / 2, { zoom: 1, duration: 400 })
   }, [nodes, setNodes, setCenter])
 
-  const focus = useCallback((path: string) => {
-    focusRef.current = path
-  }, [])
+  // Arm focus, then seed: the new card is queued to center the moment it's laid
+  // out. The order is a canvas concern, so it lives here, not in the caller.
+  const focusOn = useCallback(
+    (path: string) => {
+      focusRef.current = path
+      seed(path)
+    },
+    [seed],
+  )
 
-  return { nodes, edges, onNodesChange, onEdgesChange, focus }
+  return { nodes, edges, onNodesChange, onEdgesChange, focusOn }
 }
