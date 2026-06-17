@@ -6,6 +6,7 @@ import { memo } from 'react'
 // the path bounding box and misaligns on near-vertical/horizontal edges.
 function GradientEdge({
   id,
+  data,
   sourceX,
   sourceY,
   targetX,
@@ -21,22 +22,34 @@ function GradientEdge({
     sourcePosition,
     targetPosition,
   })
+  const active = data?.active === true
+  // Dimmed edges drop the directional gradient for flat grey, so amber→cyan
+  // colour reads only on the selected card's links.
+  const style = active
+    ? {
+        stroke: `url(#g-${id})`,
+        strokeWidth: 1.2,
+        filter: 'drop-shadow(0 0 3px rgba(108, 92, 231, 0.45))',
+      }
+    : { stroke: '#4e526d', strokeWidth: 1, }
   return (
     <>
-      <defs>
-        <linearGradient
-          id={`g-${id}`}
-          gradientUnits="userSpaceOnUse"
-          x1={sourceX}
-          y1={sourceY}
-          x2={targetX}
-          y2={targetY}
-        >
-          <stop offset="0%" stopColor="#f59e0b" />
-          <stop offset="100%" stopColor="#38bdf8" />
-        </linearGradient>
-      </defs>
-      <BaseEdge id={id} path={path} style={{ stroke: `url(#g-${id})`, strokeWidth: 2 }} />
+      {active && (
+        <defs>
+          <linearGradient
+            id={`g-${id}`}
+            gradientUnits="userSpaceOnUse"
+            x1={sourceX}
+            y1={sourceY}
+            x2={targetX}
+            y2={targetY}
+          >
+            <stop offset="0%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#38bdf8" />
+          </linearGradient>
+        </defs>
+      )}
+      <BaseEdge id={id} path={path} style={style} />
     </>
   )
 }

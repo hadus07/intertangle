@@ -155,14 +155,7 @@ body {
   stroke-width: 1.5;
 }
 
-/* All lines dimmed by default; only a selected card's links are highlighted. */
-.react-flow__edge { opacity: 0.3; }
-.react-flow__edge.iw-edge-active { opacity: 1; }
-.react-flow__edge.iw-edge-active .react-flow__edge-path {
-  stroke: #6c5ce7;
-  filter: drop-shadow(0 0 3px rgba(108, 92, 231, 0.45));
-}
-
+/* Edge appearance (dimmed grey vs active gradient) lives in GradientEdge.tsx. */
 .react-flow__arrowhead path { fill: #232640; stroke: none; }
 
 .react-flow__attribution { background: transparent; }

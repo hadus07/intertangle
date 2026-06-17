@@ -215,7 +215,7 @@ export default function App() {
       ? edges
       : edges.map((e) =>
           selectedIds.has(e.source) || selectedIds.has(e.target)
-            ? { ...e, className: 'iw-edge-active' }
+            ? { ...e, data: { ...e.data, active: true } }
             : e,
         )
 
