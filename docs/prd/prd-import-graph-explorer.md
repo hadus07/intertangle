@@ -146,7 +146,10 @@ automated browser tests in v1.
 - **Clickable import lines inside the rendered code** ("A" in the design discussion). Requires TS-parser source positions for each import/export specifier plus Shiki decorations layered over the highlighted HTML. Deferred; chip-driven expansion delivers the full exploration experience first.
 - **Live file watching / auto re-scan.** The graph is a startup snapshot. Since source is read live per request, only changed *edges* require a restart. A manual rescan button, then a chokidar watcher, are the staged upgrades if editing-while-open becomes a real workflow.
 - **Region / signature views** (showing only the import/export region of a file). Whole-file scroll box only.
-- **Layout persistence** across sessions.
+- **Layout persistence** across sessions — *partially relaxed by slice 07*: sidebar panel width
+  (global `autoSaveId`) and per-project file exclusions (`localStorage["interweave:excluded:"+root]`)
+  now persist client-side. This is the tool's first client-side persisted state; it does not touch
+  the graph/edge snapshot model. Canvas node positions are still not persisted.
 - **Multi-tsconfig merging** for complex monorepos. Single root tsconfig or explicit `--tsconfig` flag only.
 - **Languages other than TS/JS.**
 - **Traversing into `node_modules`** or rendering external packages as expandable nodes.

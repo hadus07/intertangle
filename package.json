@@ -6,7 +6,9 @@
   "bin": {
     "interweave": "dist/cli.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "npm run build:cli && npm run build:web",
     "build:cli": "tsup",
@@ -25,6 +27,7 @@
     "open": "^10.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-resizable-panels": "^2.1.9",
     "shiki": "^1.6.0"
   },
   "devDependencies": {

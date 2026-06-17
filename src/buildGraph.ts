@@ -19,7 +19,7 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
       path: 'node_modules',
       dependencyTypes: ['npm', 'npm-dev', 'npm-optional', 'npm-peer', 'core'],
     },
-    exclude: '^(node_modules|dist|\\.git|coverage)$',
+    exclude: '(^|/)(dist|\\.git|coverage)(/|$)',
     moduleSystems: ['es6', 'cjs'],
     combinedDependencies: true,
     tsPreCompilationDeps: true,
@@ -43,6 +43,9 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
     if (!raw || typeof raw !== 'string') continue
     const source = toProjectRelative(raw, root)
     if (!source) continue
+    // doNotFollow reports node_modules deps (so they can be labeled external) but
+    // doesn't crawl them; they still surface as modules. Never make them nodes.
+    if (`/${source}`.includes('/node_modules/')) continue
     if (!isProjectFile(raw, root)) continue
 
     const node: GraphNode = {

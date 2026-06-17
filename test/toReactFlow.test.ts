@@ -98,6 +98,46 @@ describe('toReactFlow', () => {
     }
   })
 
+  it('drops excluded nodes and edges touching them', async () => {
+    const { nodes, edges } = await toReactFlow(
+      graph,
+      new Set(['a.ts', 'b.ts', 'c.ts']),
+      undefined,
+      undefined,
+      new Set(['b.ts']),
+    )
+
+    expect(nodes.map((n) => n.id).sort()).toEqual(['a.ts', 'c.ts'])
+    // a->b and b->c both touch the excluded b.ts, so no edges remain.
+    expect(edges).toEqual([])
+  })
+
+  it('stays deterministic and overlap-free with an excluded set', async () => {
+    const visible = new Set(['a.ts', 'b.ts', 'c.ts'])
+    const excluded = new Set(['b.ts'])
+    const first = await toReactFlow(graph, visible, undefined, undefined, excluded)
+    const second = await toReactFlow(graph, visible, undefined, undefined, excluded)
+
+    const pos = (r: typeof first) =>
+      r.nodes.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }))
+    expect(pos(first)).toEqual(pos(second))
+
+    // True AABB non-overlap: surviving disconnected nodes stack with a small
+    // gap, so the loose center-distance heuristic doesn't apply here.
+    const { nodes } = first
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i]
+        const b = nodes[j]
+        const overlapX =
+          a.position.x < b.position.x + CARD_WIDTH && b.position.x < a.position.x + CARD_WIDTH
+        const overlapY =
+          a.position.y < b.position.y + CARD_HEIGHT && b.position.y < a.position.y + CARD_HEIGHT
+        expect(overlapX && overlapY).toBe(false)
+      }
+    }
+  })
+
   it('renders import cycles without crashing', async () => {
     const result = await toReactFlow(cycleGraph, new Set(Object.keys(cycleGraph.nodes)))
     expect(result.nodes).toHaveLength(3)

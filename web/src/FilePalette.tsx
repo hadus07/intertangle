@@ -3,15 +3,16 @@ import type { Graph } from '~shared/graph'
 
 interface Props {
   graph: Graph
+  excluded: Set<string>
   open: boolean
   onClose: () => void
   onSelect: (path: string) => void
 }
 
-export default function FilePalette({ graph, open, onClose, onSelect }: Props) {
+export default function FilePalette({ graph, excluded, open, onClose, onSelect }: Props) {
   if (!open) return null
 
-  const paths = Object.keys(graph.nodes)
+  const paths = Object.keys(graph.nodes).filter((p) => !excluded.has(p))
 
   function handleSelect(path: string) {
     onSelect(path)

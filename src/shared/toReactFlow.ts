@@ -26,9 +26,11 @@ export async function toReactFlow(
   // CARD_* constants are only a first-paint fallback. Without this, elk packs
   // for the wrong box and rendered cards overlap.
   sizes?: Map<string, { width: number; height: number }>,
+  excluded?: Set<string>,
 ) {
   const nodes: Node<FileCardData>[] = []
   for (const id of [...visible].sort()) {
+    if (excluded?.has(id)) continue
     const node = graph.nodes[id]
     if (!node) continue
 
@@ -41,8 +43,8 @@ export async function toReactFlow(
       position: { x: 0, y: 0 },
       data: {
         ...node,
-        importCount: graph.forward[id]?.length ?? 0,
-        importedByCount: graph.reverse[id]?.length ?? 0,
+        importCount: (graph.forward[id] ?? []).filter((p) => !excluded?.has(p)).length,
+        importedByCount: (graph.reverse[id] ?? []).filter((p) => !excluded?.has(p)).length,
         externals: graph.external[id] ?? [],
         sourceExpanded: isSourceExpanded,
       },
@@ -52,9 +54,9 @@ export async function toReactFlow(
 
   const edges: Edge[] = []
   for (const [source, targets] of Object.entries(graph.forward)) {
-    if (!visible.has(source)) continue
+    if (!visible.has(source) || excluded?.has(source)) continue
     for (const target of targets) {
-      if (!visible.has(target)) continue
+      if (!visible.has(target) || excluded?.has(target)) continue
       edges.push({ id: `${source}->${target}`, source, target, type: 'gradient' })
     }
   }

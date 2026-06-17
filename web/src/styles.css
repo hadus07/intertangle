@@ -17,6 +17,79 @@ body {
   letter-spacing: 0.05em;
 }
 
+/* ── Sidebar file tree ─────────────────────────────── */
+
+.iw-sidebar {
+  background: #0a0b10;
+  border-right: 1px solid #1a1c2c;
+  overflow: auto;
+  font-family: 'JetBrains Mono', 'Menlo', 'Monaco', monospace;
+  font-size: 12px;
+}
+
+.iw-tree { padding: 8px 4px; }
+
+.iw-tree-folder > .iw-tree-row { list-style: none; }
+.iw-tree-folder { padding-left: 12px; }
+.iw-tree > .iw-tree-folder { padding-left: 0; }
+
+.iw-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.iw-tree-row input[type='checkbox'] {
+  accent-color: #6c5ce7;
+  cursor: pointer;
+  margin: 0;
+}
+
+.iw-tree-label {
+  color: #aeb3d0;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.iw-tree-label:hover { color: #9d93f0; }
+.iw-tree-label--folder { color: #5a6080; cursor: default; }
+.iw-tree-label--folder:hover { color: #5a6080; }
+.iw-tree-label--excluded { color: #3a3f5c; cursor: default; text-decoration: line-through; }
+.iw-tree-label--excluded:hover { color: #3a3f5c; }
+
+/* ── Resize handle & collapse toggle ───────────────── */
+
+.iw-resize-handle {
+  width: 1px;
+  background: #1a1c2c;
+  transition: background 0.12s;
+}
+.iw-resize-handle:hover,
+.iw-resize-handle[data-resize-handle-state='drag'] { background: #6c5ce7; }
+
+.iw-collapse-toggle {
+  position: absolute;
+  top: 12px;
+  left: 8px;
+  z-index: 5;
+  width: 22px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #232640;
+  border-radius: 6px;
+  background: #131520;
+  color: #5a6080;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.iw-collapse-toggle:hover { color: #6c5ce7; border-color: #6c5ce7; }
+
 /* ── ReactFlow canvas ──────────────────────────────── */
 
 .react-flow { background: #0d0e12; }
