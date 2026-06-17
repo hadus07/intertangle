@@ -21,14 +21,14 @@
   /* Text */
   --iw-text: #dde0f5;
   --iw-text-secondary: #aeb3d0;
-  --iw-text-muted: #8287b0; /* lifted from #5a6080 to clear AA on dark surfaces */
+  --iw-text-muted: #9ea3c8; /* ~7:1 on dark surfaces — was #8287b0, sat right at the AA floor */
   --iw-text-faint: #3a3f5c; /* decorative only: placeholders, disabled, struck-through */
 
   /* Accent (indigo) */
   --iw-accent: #6c5ce7;
   --iw-accent-hover: #9d93f0;
   --iw-accent-active: #cfc8ff;
-  --iw-accent-dim: #8780bf; /* lifted resting chip text to clear AA */
+  --iw-accent-dim: #a39cd6; /* ~7:1 resting chip text */
   --iw-accent-wash: color-mix(in srgb, var(--iw-accent) 16%, transparent);
   --iw-accent-wash-soft: color-mix(in srgb, var(--iw-accent) 12%, transparent);
   --iw-accent-wash-faint: color-mix(in srgb, var(--iw-accent) 8%, transparent);
@@ -37,7 +37,7 @@
   /* Info (blue) */
   --iw-info: #4a8eff;
   --iw-info-hover: #7ab0ff;
-  --iw-info-dim: #5f82c8; /* lifted resting chip text to clear AA */
+  --iw-info-dim: #7fa0e0; /* ~7:1 resting chip text */
   --iw-info-wash: color-mix(in srgb, var(--iw-info) 8%, transparent);
 
   /* Danger */
@@ -127,7 +127,7 @@ body {
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s;
 }
-.iw-icon-btn:hover { color: var(--iw-accent); border-color: var(--iw-accent); }
+.iw-icon-btn:hover { color: var(--iw-accent-hover); border-color: var(--iw-accent); }
 
 .iw-tree-folder > .iw-tree-row { list-style: none; }
 
@@ -219,8 +219,8 @@ body {
 .iw-collapse-toggle { left: 8px; }
 .iw-search-btn { left: 44px; }
 .iw-clear-canvas { left: 80px; }
-.iw-collapse-toggle:hover { color: var(--iw-accent); border-color: var(--iw-accent); }
-.iw-search-btn:hover { color: var(--iw-accent); border-color: var(--iw-accent); }
+.iw-collapse-toggle:hover { color: var(--iw-accent-hover); border-color: var(--iw-accent); }
+.iw-search-btn:hover { color: var(--iw-accent-hover); border-color: var(--iw-accent); }
 .iw-clear-canvas:hover { color: var(--iw-danger); border-color: var(--iw-danger); }
 
 /* ── ReactFlow canvas ──────────────────────────────── */
