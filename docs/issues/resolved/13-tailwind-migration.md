@@ -37,17 +37,17 @@ faithful — no redesign.
 
 ## Acceptance criteria
 
-- [ ] Tailwind v4 builds via `@tailwindcss/vite` at `vite build`; no install/run-time build step added; `dist/` ships compiled CSS. (`npm run build`)
-- [ ] `@theme` bridges `--iw-*` tokens to utilities; `:root`/`[data-theme="dark"]` blocks unchanged; no `dark:` variants present. (manual-verify + grep)
-- [ ] `bg-canvas/50`-style opacity utility renders correctly through the token bridge. (manual-verify)
-- [ ] `cn` helper exists and is string-only over `tailwind-merge`; `clsx`/`classnames` absent from `package.json`. (grep + `npm test`)
-- [ ] All rendered-element `iw-*` classes replaced by utilities; no template-literal class ternaries remain in components. (grep)
-- [ ] `SourceView` override path uses `cn(base, className)`. (manual-verify)
-- [ ] Residual `styles.css` retains only `.react-flow__*`, Shiki/source-HTML rules, token defs, and resets. (manual-verify)
-- [ ] Screenshot baseline diffed before/after via Playwright subagent; no unintended visual change; harness removed on landing. (manual-verify)
-- [ ] Existing seam suite stays green. (`npm test`)
-- [ ] `npx biome check .` is clean. (test)
-- [ ] End-user-visible behavior and appearance unchanged. (manual-verify)
+- [x] Tailwind v4 builds via `@tailwindcss/vite` at `vite build`; no install/run-time build step added; `dist/` ships compiled CSS. (`npm run build`)
+- [x] `@theme` bridges `--iw-*` tokens to utilities; `:root`/`[data-theme="dark"]` blocks unchanged; no `dark:` variants present. (manual-verify + grep)
+- [x] `bg-canvas/50`-style opacity utility renders correctly through the token bridge. (manual-verify)
+- [x] `cn` helper exists and is string-only over `tailwind-merge`; `clsx`/`classnames` absent from `package.json`. (grep + `npm test`)
+- [x] All rendered-element `iw-*` classes replaced by utilities; no template-literal class ternaries remain in components. (grep)
+- [x] `SourceView` override path uses `cn(base, className)`. (manual-verify)
+- [x] Residual `styles.css` retains only `.react-flow__*`, Shiki/source-HTML rules, token defs, and resets. (manual-verify)
+- [x] Screenshot baseline diffed before/after via Playwright subagent; no unintended visual change; harness removed on landing. (manual-verify)
+- [x] Existing seam suite stays green. (`npm test`)
+- [x] `npx biome check .` is clean. (test)
+- [x] End-user-visible behavior and appearance unchanged. (manual-verify)
 
 ## Blocked by
 

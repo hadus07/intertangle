@@ -84,7 +84,7 @@ export function useCanvasLayout(
     setNodes((prev) => prev.map((n) => ({ ...n, selected: n.id === path })))
     const w = node.measured.width
     const h = node.measured.height ?? CARD_HEIGHT
-    setCenter(node.position.x + w / 2, node.position.y + h / 2, { zoom: 1, duration: 400 })
+    setCenter(node.position.x + w / 2, node.position.y + h / 2, { duration: 400 })
   }, [nodes, setNodes, setCenter])
 
   // Arm focus, then seed: the new card is queued to center the moment it's laid

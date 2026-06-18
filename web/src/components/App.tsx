@@ -101,15 +101,17 @@ export default function App() {
         collapsedSize={0}
         defaultSize={18}
         minSize={10}
-        className="bg-sidebar border-r border-border overflow-auto font-mono text-[12px]"
+        className="bg-sidebar border-r border-border font-mono text-[12px] text-text"
       >
-        <FileTree
-          paths={scopedPaths}
-          excluded={excluded}
-          activePath={selectedPath}
-          onSetExcluded={setExclusion}
-          onSeed={focusOn}
-        />
+        <div className="h-full overflow-auto">
+          <FileTree
+            paths={scopedPaths}
+            excluded={excluded}
+            activePath={selectedPath}
+            onSetExcluded={setExclusion}
+            onSeed={focusOn}
+          />
+        </div>
       </Panel>
       <PanelResizeHandle className="w-px bg-border transition-colors duration-120 hover:bg-accent data-[resize-handle-state=drag]:bg-accent" />
       <Panel>

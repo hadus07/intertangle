@@ -105,8 +105,8 @@
   --iw-danger-wash: color-mix(in srgb, var(--iw-danger) 12%, transparent);
 
   /* Chips */
-  --iw-chip-imports-border: #2a2860;
-  --iw-chip-importedby-border: #1a2a50;
+  --iw-chip-imports-border: #3d3870;
+  --iw-chip-importedby-border: #253460;
 
   /* External dep labels */
   --iw-ext-npm-bg: #0f2020;
@@ -137,6 +137,7 @@
 body {
   margin: 0;
   background: var(--iw-bg-canvas);
+  color: var(--iw-text);
 }
 
 /* ── ReactFlow canvas ──────────────────────────────── */

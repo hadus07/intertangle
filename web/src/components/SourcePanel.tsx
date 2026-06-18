@@ -17,7 +17,7 @@ class SourceErrorBoundary extends Component<{ children: ReactNode }, { err: bool
 }
 
 const actionBase =
-  '[all:unset] flex items-center justify-center w-4.5 h-4.5 rounded text-[12px] leading-none text-muted cursor-pointer transition-[color,background] duration-120 hover:text-accent-hover hover:bg-accent-wash-soft'
+  'bg-transparent border-0 p-0 appearance-none outline-none flex items-center justify-center w-4.5 h-4.5 rounded text-[12px] leading-none text-muted cursor-pointer transition-[color,background] duration-120 hover:text-accent-hover hover:bg-accent-wash-soft'
 const actionRemove = `${actionBase} hover:text-danger hover:bg-danger-wash`
 
 export default function SourcePanel({ path, onClose }: { path: string; onClose(): void }) {

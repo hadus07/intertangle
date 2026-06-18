@@ -6,9 +6,7 @@
   "bin": {
     "intertangle": "dist/cli.js"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
     "build": "npm run build:cli && npm run build:web",
     "build:cli": "tsup",
