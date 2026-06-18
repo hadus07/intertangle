@@ -48,7 +48,7 @@ async function main() {
   const args =
     tsconfigIdx === -1 ? argv : argv.filter((_, i) => i !== tsconfigIdx && i !== tsconfigIdx + 1)
 
-  const envRoot = process.env.INTERWEAVE_ROOT
+  const envRoot = process.env.INTERTANGLE_ROOT
   const { root, scopeArgs } = parseRootArg(args, envRoot ? path.resolve(envRoot) : cwd)
 
   const graph = await buildGraph(root, tsconfig)
@@ -68,7 +68,7 @@ async function main() {
 
   // Fixed default port keeps a stable origin so the browser's localStorage
   // (sidebar width, deselected files) survives CLI restarts.
-  const portEnv = process.env.INTERWEAVE_PORT
+  const portEnv = process.env.INTERTANGLE_PORT
   const preferredPort = portEnv ? Number.parseInt(portEnv, 10) : 31718
   const { port, close } = await startServer(graph, undefined, preferredPort).catch(() =>
     // ponytail: port in use → ephemeral fallback; that session won't persist UI prefs.
@@ -83,7 +83,7 @@ async function main() {
     url.searchParams.set('scope', scope.join(','))
   }
   console.log(`intertangle running at ${url}`)
-  if (!process.env.INTERWEAVE_NO_OPEN) {
+  if (!process.env.INTERTANGLE_NO_OPEN) {
     await open(url.toString())
   }
 

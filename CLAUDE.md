@@ -37,6 +37,10 @@ go stale (restart to refresh them).
 - `node_modules` is never traversed; external packages render as **inert, non-expandable labels** only.
 - Prebuilt assets ship in the package — **no build step at install or run time**. `files: ["dist"]`. Server resolves assets via `new URL('./web/', import.meta.url)`.
 
+## Code style
+
+- Prefer function declarations over arrow-function expressions for named functions with block bodies — `function foo() {}` not `const foo = () => {}`. Keep arrows for: one-liner expressions (`const key = (x) => \`prefix:${x}\``), inline object-returning lambdas, and callbacks passed directly to JSX or array methods.
+
 ## Locked scaffold decisions (do not re-litigate)
 
 - **Package manager:** npm, single package, no workspaces.

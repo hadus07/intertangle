@@ -40,9 +40,27 @@ describe('server', () => {
     expect(res.status).toBe(403)
   })
 
-  it('rejects absolute out-of-project paths at /file', async () => {
-    const res = await fetch(`http://127.0.0.1:${handle.port}/file?path=%2Fetc%2Fpasswd`)
+  it('rejects missing, empty, or absolute path at /file with 400', async () => {
+    const missing = await fetch(`http://127.0.0.1:${handle.port}/file`)
+    expect(missing.status).toBe(400)
+    const empty = await fetch(`http://127.0.0.1:${handle.port}/file?path=`)
+    expect(empty.status).toBe(400)
+    const absolute = await fetch(`http://127.0.0.1:${handle.port}/file?path=%2Fetc%2Fpasswd`)
+    expect(absolute.status).toBe(400)
+  })
+
+  it('rejects path traversal at /open', async () => {
+    const res = await fetch(`http://127.0.0.1:${handle.port}/open?path=..%2Fpackage.json`)
     expect(res.status).toBe(403)
+  })
+
+  it('rejects missing, empty, or absolute path at /open with 400', async () => {
+    const missing = await fetch(`http://127.0.0.1:${handle.port}/open`)
+    expect(missing.status).toBe(400)
+    const empty = await fetch(`http://127.0.0.1:${handle.port}/open?path=`)
+    expect(empty.status).toBe(400)
+    const absolute = await fetch(`http://127.0.0.1:${handle.port}/open?path=%2Fetc%2Fpasswd`)
+    expect(absolute.status).toBe(400)
   })
 
   afterAll(async () => {

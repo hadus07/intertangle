@@ -1,6 +1,6 @@
 import { Background, BackgroundVariant, Controls, ReactFlow } from '@xyflow/react'
 import { PanelLeft, Search, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import {
   type ImperativePanelHandle,
   Panel,
@@ -8,28 +8,32 @@ import {
   PanelResizeHandle,
 } from 'react-resizable-panels'
 import type { Graph } from '~shared/graph'
+
+const graphPromise: Promise<Graph> = fetch('/graph').then((r) => r.json())
+import { useCanvasLayout } from '../hooks/useCanvasLayout'
+import { useGraphView } from '../hooks/useGraphView'
 import FileCardNode from './FileCardNode'
 import FilePalette from './FilePalette'
 import FileTree from './FileTree'
 import GradientEdge from './GradientEdge'
 import SourcePanel from './SourcePanel'
-import { useCanvasLayout } from './useCanvasLayout'
-import { useGraphView } from './useGraphView'
 
 const nodeTypes = { fileCard: FileCardNode }
 const edgeTypes = { gradient: GradientEdge }
 
-// Folder/file args that restrict which paths the tree + palette list.
-const SCOPE = (() => {
+function parseScopeParam(): string[] {
   const raw = new URLSearchParams(window.location.search).get('scope')
   return raw ? raw.split(',').filter(Boolean) : []
-})()
+}
 
-const inScope = (p: string) =>
-  SCOPE.length === 0 || SCOPE.some((s) => p === s || p.startsWith(`${s}/`))
+const SCOPE = parseScopeParam()
+
+function inScope(p: string) {
+  return SCOPE.length === 0 || SCOPE.some((s) => p === s || p.startsWith(`${s}/`))
+}
 
 export default function App() {
-  const [graph, setGraph] = useState<Graph | null>(null)
+  const graph = use(graphPromise)
   const {
     expanded,
     excluded,
@@ -52,19 +56,12 @@ export default function App() {
     seed,
   )
 
-  useEffect(() => {
-    fetch('/graph')
-      .then((r) => r.json())
-      .then(setGraph)
-      .catch((err) => console.error('failed to load graph', err))
-  }, [])
-
-  const toggleSidebar = useCallback(() => {
+  function toggleSidebar() {
     const panel = panelRef.current
     if (!panel) return
     if (panel.isCollapsed()) panel.expand()
     else panel.collapse()
-  }, [])
+  }
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -74,12 +71,15 @@ export default function App() {
       }
       if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
         e.preventDefault()
-        toggleSidebar()
+        const panel = panelRef.current
+        if (!panel) return
+        if (panel.isCollapsed()) panel.expand()
+        else panel.collapse()
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [toggleSidebar])
+  }, [])
 
   const selectedNodes = nodes.filter((n) => n.selected)
   const selectedPath = selectedNodes.length === 1 ? selectedNodes[0].id : null
@@ -92,8 +92,6 @@ export default function App() {
             ? { ...e, data: { ...e.data, active: true } }
             : e,
         )
-
-  if (!graph) return <div className="loading">loading…</div>
 
   const scopedPaths = Object.keys(graph.nodes).filter(inScope)
 

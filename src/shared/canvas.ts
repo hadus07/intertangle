@@ -1,20 +1,21 @@
 import type { Edge, Node } from '@xyflow/react'
-import type { ExternalLabel, Graph } from './graph.js'
+import type { ExternalLabel, Graph, GraphNode } from './graph.js'
 
 export const CARD_WIDTH = 240
 export const CARD_HEIGHT = 120
 
 export type ExpandDirection = 'imports' | 'importedBy'
 
-export interface FileCardData extends Record<string, unknown> {
-  name: string
-  path: string
-  importCount: number
-  importedByCount: number
-  externals: ExternalLabel[]
+export interface CardHandlers {
   onExpand?(path: string, direction: ExpandDirection): void
   onShowSource?(path: string): void
   onRemove?(path: string): void
+}
+
+export interface FileCardData extends GraphNode, CardHandlers, Record<string, unknown> {
+  importCount: number
+  importedByCount: number
+  externals: ExternalLabel[]
 }
 
 // Pure projection: graph + visible set (minus excluded) → React Flow nodes/edges.

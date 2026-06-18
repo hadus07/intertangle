@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildTree, descendantFiles } from '../web/src/treeBuilder.js'
+import { buildTree, descendantFiles } from '../web/src/lib/treeBuilder.js'
 
 describe('buildTree', () => {
   it('nests files under synthesized folders', () => {

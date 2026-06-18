@@ -6,7 +6,7 @@ import { defineConfig } from 'vite'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react({ babel: { plugins: [['babel-plugin-react-compiler', {}]] } })],
   root: __dirname,
   base: './',
   resolve: {

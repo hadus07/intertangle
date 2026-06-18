@@ -1,6 +1,6 @@
 import { ChevronsDownUp, ChevronsUpDown, File, Folder } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { type TreeNode, buildTree, descendantFiles } from './treeBuilder'
+import { useEffect, useState } from 'react'
+import { type TreeNode, buildTree, descendantFiles } from '../lib/treeBuilder'
 
 interface Props {
   paths: string[]
@@ -10,33 +10,26 @@ interface Props {
   onSeed: (path: string) => void
 }
 
-const folderPaths = (nodes: TreeNode[]): string[] =>
-  nodes.flatMap((n) => (n.isFile ? [] : [n.path, ...folderPaths(n.children)]))
+function folderPaths(nodes: TreeNode[]): string[] {
+  return nodes.flatMap((n) => (n.isFile ? [] : [n.path, ...folderPaths(n.children)]))
+}
 
-// Folders whose every descendant file is excluded — collapsed by default on load.
-const fullyExcludedFolders = (nodes: TreeNode[], excluded: Set<string>): string[] =>
-  nodes.flatMap((n) =>
+function fullyExcludedFolders(nodes: TreeNode[], excluded: Set<string>): string[] {
+  return nodes.flatMap((n) =>
     n.isFile || descendantFiles(n).some((f) => !excluded.has(f))
       ? n.isFile
         ? []
         : fullyExcludedFolders(n.children, excluded)
       : [n.path],
   )
+}
 
 export default function FileTree({ paths, excluded, activePath, onSetExcluded, onSeed }: Props) {
-  const tree = useMemo(() => buildTree(paths), [paths])
+  const tree = buildTree(paths)
   // ponytail: seed once from the restored exclusions; user toggles take over after.
   const [collapsed, setCollapsed] = useState<Set<string>>(
     () => new Set(fullyExcludedFolders(tree, excluded)),
   )
-  // Hydration: excluded starts empty and is restored after first render; reseed collapse then.
-  const excludedSizeOnMount = useRef(excluded.size)
-  const hasHydrated = excludedSizeOnMount.current === 0 && excluded.size > 0
-  useEffect(() => {
-    if (hasHydrated) {
-      setCollapsed(new Set(fullyExcludedFolders(tree, excluded)))
-    }
-  }, [hasHydrated, tree, excluded])
 
   const collapseAll = () => setCollapsed(new Set(folderPaths(tree)))
   const expandAll = () => setCollapsed(new Set())
@@ -49,13 +42,14 @@ export default function FileTree({ paths, excluded, activePath, onSetExcluded, o
       return next.size === prev.size ? prev : next
     })
   }, [activePath])
-  const onToggle = (path: string, open: boolean) =>
+  function onToggle(path: string, open: boolean) {
     setCollapsed((prev) => {
       const next = new Set(prev)
       if (open) next.delete(path)
       else next.add(path)
       return next
     })
+  }
 
   return (
     <div className="iw-tree">
@@ -84,8 +78,10 @@ export default function FileTree({ paths, excluded, activePath, onSetExcluded, o
   )
 }
 
-// 20 = icon width (14) + gap (6), so a child's icon sits under its parent's text.
-const indent = (depth: number) => ({ paddingLeft: 4 + depth * 20 })
+const ICON_WIDTH = 14
+const ICON_GAP = 6
+const INDENT_STEP = ICON_WIDTH + ICON_GAP
+const indent = (depth: number) => ({ paddingLeft: 4 + depth * INDENT_STEP })
 
 function Row({
   node,
@@ -109,7 +105,9 @@ function Row({
       <div
         className={`iw-tree-row${isActive ? ' iw-tree-row--active' : ''}`}
         style={indent(depth)}
-        ref={(el) => isActive && el?.scrollIntoView({ block: 'nearest' })}
+        ref={(el) => {
+          isActive && el?.scrollIntoView({ block: 'nearest' })
+        }}
       >
         <span className="iw-tree-icon">
           <File size={13} />

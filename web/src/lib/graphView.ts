@@ -13,7 +13,6 @@ export type GraphViewAction =
   | { type: 'showSource'; path: string | null }
   | { type: 'remove'; path: string }
   | { type: 'setExclusion'; files: string[]; exclude: boolean }
-  | { type: 'hydrateExclusions'; excluded: string[] }
   | { type: 'clear' }
 
 // Pure: excluded is a render-time filter only — it never mutates expanded.
@@ -51,8 +50,6 @@ export function graphView(
       }
       return { ...state, excluded }
     }
-    case 'hydrateExclusions':
-      return { ...state, excluded: new Set(action.excluded) }
     case 'clear':
       return { ...state, expanded: new Set(), sourcePath: null }
   }

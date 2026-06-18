@@ -1,7 +1,9 @@
 import type { Node, XYPosition } from '@xyflow/react'
-import type { FileCardData } from '~shared/canvas'
+import type { CardHandlers, FileCardData } from '~shared/canvas'
 
-export type CardHandlers = Pick<FileCardData, 'onExpand' | 'onShowSource' | 'onRemove'>
+export type { CardHandlers }
+
+const STACK_OFFSET = 24
 
 // Merge freshly-projected nodes over the previous render: keep prior position and
 // measured size for surviving cards (so an expand doesn't reset the laid-out
@@ -9,7 +11,7 @@ export type CardHandlers = Pick<FileCardData, 'onExpand' | 'onShowSource' | 'onR
 // Brand-new nodes have no prior position (projectGraph seeds them at 0,0); when an
 // expand supplies an anchor, fan them out from the expanded card so they emerge
 // from under it instead of piling at the origin. Pass 2 then lays them out properly.
-export function mergeNodes(
+export function reconcileCanvasNodes(
   prev: Node<FileCardData>[],
   next: Node<FileCardData>[],
   handlers: CardHandlers,
@@ -17,12 +19,16 @@ export function mergeNodes(
 ): Node<FileCardData>[] {
   const prevById = new Map(prev.map((n) => [n.id, n]))
   const anchor = anchorPath ? prevById.get(anchorPath)?.position : undefined
-  let fresh = 0
+  let newCardCount = 0
   return next.map((n) => {
     const old = prevById.get(n.id)
     let position: XYPosition
     if (old) position = old.position
-    else if (anchor) position = { x: anchor.x + 24 * ++fresh, y: anchor.y + 24 * fresh }
+    else if (anchor)
+      position = {
+        x: anchor.x + STACK_OFFSET * ++newCardCount,
+        y: anchor.y + STACK_OFFSET * newCardCount,
+      }
     else position = n.position
     return {
       ...n,

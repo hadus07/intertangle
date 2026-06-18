@@ -6,6 +6,7 @@ import JSON5 from 'json5'
 import type { ExternalLabel, ExternalLabelType, Graph, GraphNode } from './shared/graph.js'
 
 const LOCAL_TYPES = new Set(['local', 'localmodule'])
+const GITIGNORED_DIRS = new Set(['node_modules', '.git'])
 
 type IgnoreMap = Map<string, ReturnType<typeof ignore>>
 
@@ -20,11 +21,8 @@ function findGitRepoRoot(dir: string): string {
   return current
 }
 
-function loadGitignores(scanRoot: string): IgnoreMap {
-  const repoRoot = findGitRepoRoot(scanRoot)
+function loadAncestorGitignores(scanRoot: string, repoRoot: string): IgnoreMap {
   const ignores: IgnoreMap = new Map()
-
-  // .gitignore files from scan root up to the repo root apply to the scan.
   let current = path.resolve(scanRoot)
   while (true) {
     const gitignorePath = path.join(current, '.gitignore')
@@ -37,9 +35,11 @@ function loadGitignores(scanRoot: string): IgnoreMap {
     if (parent === current) break
     current = parent
   }
+  return ignores
+}
 
-  // Nested .gitignore files under the scan root refine the rules for subtrees.
-  const GITIGNORED_DIRS = new Set(['node_modules', '.git'])
+function loadDescendantGitignores(scanRoot: string, repoRoot: string): IgnoreMap {
+  const ignores: IgnoreMap = new Map()
   function walk(dir: string) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue
@@ -54,20 +54,34 @@ function loadGitignores(scanRoot: string): IgnoreMap {
     }
   }
   walk(path.resolve(scanRoot))
-
   return ignores
 }
 
 function isIgnored(projectRelativePath: string, scanRootRel: string, ignores: IgnoreMap): boolean {
   const repoRelFile = scanRootRel ? `${scanRootRel}/${projectRelativePath}` : projectRelativePath
-  for (const [dirRel, ig] of ignores) {
+  for (const [dirRel, ignorer] of ignores) {
     if (dirRel !== '' && !repoRelFile.startsWith(`${dirRel}/`) && repoRelFile !== dirRel) {
       continue
     }
     const rel = dirRel === '' ? repoRelFile : repoRelFile.slice(dirRel.length + 1)
-    if (ig.ignores(rel)) return true
+    if (ignorer.ignores(rel)) return true
   }
   return false
+}
+
+function buildReverseIndex(forward: Record<string, string[]>): Record<string, string[]> {
+  const reverse: Record<string, string[]> = {}
+  for (const source of Object.keys(forward)) reverse[source] = []
+  for (const [source, targets] of Object.entries(forward)) {
+    for (const target of targets) {
+      if (!reverse[target]) reverse[target] = []
+      reverse[target].push(source)
+    }
+  }
+  for (const source of Object.keys(reverse)) {
+    reverse[source] = sortedUnique(reverse[source])
+  }
+  return reverse
 }
 
 export async function buildGraph(root: string, tsconfig?: string): Promise<Graph> {
@@ -105,17 +119,20 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
     external: {},
   }
 
-  const ignores = loadGitignores(absoluteRoot)
   const repoRoot = findGitRepoRoot(absoluteRoot)
+  const ignores: IgnoreMap = new Map([
+    ...loadAncestorGitignores(absoluteRoot, repoRoot),
+    ...loadDescendantGitignores(absoluteRoot, repoRoot),
+  ])
   const scanRootRel = path.relative(repoRoot, absoluteRoot).replaceAll('\\', '/') || ''
 
   for (const mod of modules) {
-    const raw = (mod as { source?: string }).source
-    if (!raw || typeof raw !== 'string') continue
-    const source = toProjectRelative(raw, absoluteRoot)
+    const modulePath = (mod as { source?: string }).source
+    if (!modulePath || typeof modulePath !== 'string') continue
+    const source = toProjectRelative(modulePath, absoluteRoot)
     if (!source) continue
     if (isIgnored(source, scanRootRel, ignores)) continue
-    if (!isProjectFile(raw, absoluteRoot)) continue
+    if (!isProjectFile(modulePath, absoluteRoot)) continue
 
     const node: GraphNode = {
       path: source,
@@ -123,7 +140,6 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
     }
     graph.nodes[source] = node
     graph.forward[source] = []
-    graph.reverse[source] = []
     graph.external[source] = []
 
     const deps = (mod as { dependencies?: unknown[] }).dependencies ?? []
@@ -148,14 +164,7 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
     graph.external[source] = uniqueLabels(graph.external[source])
   }
 
-  for (const [source, targets] of Object.entries(graph.forward)) {
-    for (const target of targets) {
-      graph.reverse[target].push(source)
-    }
-  }
-  for (const source of Object.keys(graph.reverse)) {
-    graph.reverse[source] = sortedUnique(graph.reverse[source])
-  }
+  graph.reverse = buildReverseIndex(graph.forward)
 
   return graph
 }
@@ -198,24 +207,24 @@ function sortedUnique(arr: string[]): string[] {
 
 const IGNORED_DIRS = new Set(['node_modules', 'dist', '.git', 'coverage'])
 
-function findTsconfigs(dir: string, out: string[] = []): string[] {
+function findTsconfigs(dir: string, acc: string[] = []): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
-      if (!IGNORED_DIRS.has(entry.name)) findTsconfigs(path.join(dir, entry.name), out)
+      if (!IGNORED_DIRS.has(entry.name)) findTsconfigs(path.join(dir, entry.name), acc)
     } else if (/^tsconfig.*\.json$/.test(entry.name)) {
-      out.push(path.join(dir, entry.name))
+      acc.push(path.join(dir, entry.name))
     }
   }
-  return out
+  return acc
 }
 
 function tsconfigAlias(tsconfigPath: string): Record<string, string> {
   try {
-    const tc = JSON5.parse(fs.readFileSync(tsconfigPath, 'utf8')) as {
+    const tsconfigJson = JSON5.parse(fs.readFileSync(tsconfigPath, 'utf8')) as {
       compilerOptions?: { paths?: Record<string, string[]>; baseUrl?: string }
     }
-    const paths = tc.compilerOptions?.paths ?? {}
-    const baseUrl = tc.compilerOptions?.baseUrl ?? '.'
+    const paths = tsconfigJson.compilerOptions?.paths ?? {}
+    const baseUrl = tsconfigJson.compilerOptions?.baseUrl ?? '.'
     const dir = path.dirname(tsconfigPath)
     const alias: Record<string, string> = {}
     for (const [key, vals] of Object.entries(paths)) {

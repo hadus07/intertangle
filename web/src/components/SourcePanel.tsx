@@ -1,8 +1,18 @@
 import { Check, Copy, ExternalLink, X } from 'lucide-react'
-import { useState } from 'react'
+import { Component, type ReactNode, Suspense, useState } from 'react'
 import SourceView from './SourceView'
 
-// Right-hand panel: header actions (copy path, open in editor, close) + live source.
+class SourceErrorBoundary extends Component<{ children: ReactNode }, { err: boolean }> {
+  state = { err: false }
+  static getDerivedStateFromError() {
+    return { err: true }
+  }
+  render() {
+    if (this.state.err) return <div className="iw-source-error">failed to load source</div>
+    return this.props.children
+  }
+}
+
 export default function SourcePanel({ path, onClose }: { path: string; onClose(): void }) {
   const [copied, setCopied] = useState(false)
 
@@ -54,7 +64,11 @@ export default function SourcePanel({ path, onClose }: { path: string; onClose()
           </button>
         </div>
       </div>
-      <SourceView path={path} className="iw-source-side-body" />
+      <SourceErrorBoundary>
+        <Suspense fallback={<div className="iw-source-loading">loading…</div>}>
+          <SourceView path={path} className="iw-source-side-body" />
+        </Suspense>
+      </SourceErrorBoundary>
     </div>
   )
 }

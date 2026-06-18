@@ -5,8 +5,6 @@ export interface TreeNode {
   children: TreeNode[]
 }
 
-// Synthesize a folder tree from project-relative file paths. Folders are
-// intermediate path segments; the leaf is the file.
 export function buildTree(paths: string[]): TreeNode[] {
   const root: TreeNode = { name: '', path: '', isFile: false, children: [] }
 
@@ -27,13 +25,13 @@ export function buildTree(paths: string[]): TreeNode[] {
   }
 
   sort(root)
-  return root.children.map(collapse)
+  return root.children.map(compressSingleChildChains)
 }
 
 // Merge folder-only single-child chains (a > b > file → "a/b"), so a scoped
 // nested folder shows as one rooted item instead of its ancestor chain.
-function collapse(node: TreeNode): TreeNode {
-  const children = node.children.map(collapse)
+function compressSingleChildChains(node: TreeNode): TreeNode {
+  const children = node.children.map(compressSingleChildChains)
   if (!node.isFile && children.length === 1 && !children[0].isFile) {
     const only = children[0]
     return {
@@ -46,7 +44,6 @@ function collapse(node: TreeNode): TreeNode {
   return { ...node, children }
 }
 
-// Folders first, then files; alpha within each group.
 function sort(node: TreeNode): void {
   node.children.sort((a, b) => {
     if (a.isFile !== b.isFile) return a.isFile ? 1 : -1

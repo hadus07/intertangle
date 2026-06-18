@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Graph } from '../src/shared/graph.js'
-import { type GraphViewState, graphView } from '../web/src/graphView.js'
+import { type GraphViewState, graphView } from '../web/src/lib/graphView.js'
 
 const graph: Graph = {
   root: '/x',
@@ -80,6 +80,19 @@ describe('graphView', () => {
       path: 'a.ts',
     })
     expect(s.sourcePath).toBe('b.ts')
+  })
+
+  it('seed adds a single path to expanded', () => {
+    const s = graphView(graph, blank(), { type: 'seed', path: 'b.ts' })
+    expect([...s.expanded]).toEqual(['b.ts'])
+  })
+
+  it('seed is idempotent on an already-expanded path', () => {
+    const s = graphView(graph, blank({ expanded: new Set(['b.ts']) }), {
+      type: 'seed',
+      path: 'b.ts',
+    })
+    expect([...s.expanded]).toEqual(['b.ts'])
   })
 
   it('clear empties expanded + sourcePath but keeps excluded', () => {

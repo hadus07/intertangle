@@ -4,7 +4,13 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import open from 'open'
 import { getSingletonHighlighter } from 'shiki'
+import { z } from 'zod'
 import type { Graph } from './shared/graph.js'
+
+const PathParam = z
+  .string()
+  .min(1)
+  .refine((p) => !path.isAbsolute(p))
 
 // The one real security boundary: confine a request path to inside `root`.
 // Returns the resolved real path, or null if it escapes (reject as 403).
@@ -82,7 +88,13 @@ export function startServer(
     }
 
     if (url.pathname === '/open' && req.method === 'GET') {
-      const decodedPath = decodeURIComponent(url.searchParams.get('path') ?? '')
+      const parsed = PathParam.safeParse(url.searchParams.get('path'))
+      if (!parsed.success) {
+        res.writeHead(400)
+        res.end('Bad request')
+        return
+      }
+      const decodedPath = decodeURIComponent(parsed.data)
       const real = await resolveInside(graph.root, decodedPath)
       if (!real) {
         res.writeHead(403)
@@ -103,8 +115,13 @@ export function startServer(
     }
 
     if (url.pathname === '/file' && req.method === 'GET') {
-      const rawPath = url.searchParams.get('path') ?? ''
-      const decodedPath = decodeURIComponent(rawPath)
+      const parsedFile = PathParam.safeParse(url.searchParams.get('path'))
+      if (!parsedFile.success) {
+        res.writeHead(400)
+        res.end('Bad request')
+        return
+      }
+      const decodedPath = decodeURIComponent(parsedFile.data)
 
       const real = await resolveInside(graph.root, decodedPath)
       if (!real) {

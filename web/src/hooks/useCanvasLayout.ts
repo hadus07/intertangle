@@ -1,17 +1,9 @@
 import { type Edge, type Node, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react'
-import { useCallback, useEffect, useRef } from 'react'
-import {
-  CARD_HEIGHT,
-  type ExpandDirection,
-  type FileCardData,
-  layout,
-  projectGraph,
-} from '~shared/canvas'
+import { useEffect, useRef } from 'react'
+import { CARD_HEIGHT, type FileCardData, layout, projectGraph } from '~shared/canvas'
 import type { Graph } from '~shared/graph'
-import { type CardHandlers, mergeNodes } from './mergeNodes'
+import { type CardHandlers, reconcileCanvasNodes } from '../lib/mergeNodes'
 
-// Owns the canvas layout lifecycle: project → measure → layout → fit, plus
-// focus-centering. App only renders the result and queues focus targets.
 export function useCanvasLayout(
   graph: Graph | null,
   expanded: Set<string>,
@@ -26,30 +18,29 @@ export function useCanvasLayout(
   const focusRef = useRef<string | null>(null)
   // Path of the card last expanded; pass 1 seeds its new neighbours nearby, then
   // clears it so a later seed/palette add doesn't reuse a stale anchor.
-  const anchorRef = useRef<string | null>(null)
-  const laidOutSig = useRef('')
-
-  // Record the expansion anchor before forwarding, so the next projection knows
-  // which card the new neighbours should emerge from.
-  const handleExpand = useCallback(
-    (path: string, direction: ExpandDirection) => {
-      anchorRef.current = path
-      onExpand?.(path, direction)
-    },
-    [onExpand],
-  )
+  const expansionAnchorRef = useRef<string | null>(null)
+  const lastLayoutSig = useRef('')
 
   // Pass 1 — node/edge existence + data (pure, no elk). Preserves prior position
   // and measured size for surviving nodes; seeds new ones near the expand anchor.
   useEffect(() => {
     if (!graph) return
     const { nodes: projected, edges: projectedEdges } = projectGraph(graph, expanded, excluded)
-    const anchorPath = anchorRef.current
-    anchorRef.current = null
-    const handlers: CardHandlers = { onExpand: handleExpand, onShowSource, onRemove }
-    setNodes((prev) => mergeNodes(prev, projected, handlers, anchorPath))
+    const anchorPath = expansionAnchorRef.current
+    expansionAnchorRef.current = null
+    // Record the expansion anchor before forwarding, so the next projection knows
+    // which card the new neighbours should emerge from.
+    const handlers: CardHandlers = {
+      onExpand: (path, direction) => {
+        expansionAnchorRef.current = path
+        onExpand?.(path, direction)
+      },
+      onShowSource,
+      onRemove,
+    }
+    setNodes((prev) => reconcileCanvasNodes(prev, projected, handlers, anchorPath))
     setEdges(projectedEdges)
-  }, [graph, expanded, excluded, handleExpand, onShowSource, onRemove, setNodes, setEdges])
+  }, [graph, expanded, excluded, onExpand, onShowSource, onRemove, setNodes, setEdges])
 
   // Pass 2 — re-layout with the sizes React Flow actually measured, so cards
   // never overlap regardless of external rows or expanded source length.
@@ -65,8 +56,8 @@ export function useCanvasLayout(
       .map(([id, s]) => `${id}:${s.width}:${s.height}`)
       .sort()
       .join('|')
-    if (sig === laidOutSig.current) return
-    laidOutSig.current = sig
+    if (sig === lastLayoutSig.current) return
+    lastLayoutSig.current = sig
     layout(nodes, edges, sizes)
       .then((laid) => {
         const pos = new Map(laid.map((n) => [n.id, n.position]))
@@ -76,8 +67,6 @@ export function useCanvasLayout(
       .catch((err) => console.error('layout failed', err))
   }, [nodes, edges, graph, setNodes, fitView])
 
-  // Focus — once the queued node exists and is measured, select it (others
-  // deselected) and center the viewport on it.
   useEffect(() => {
     const path = focusRef.current
     if (!path) return
@@ -92,13 +81,10 @@ export function useCanvasLayout(
 
   // Arm focus, then seed: the new card is queued to center the moment it's laid
   // out. The order is a canvas concern, so it lives here, not in the caller.
-  const focusOn = useCallback(
-    (path: string) => {
-      focusRef.current = path
-      seed(path)
-    },
-    [seed],
-  )
+  function focusOn(path: string) {
+    focusRef.current = path
+    seed(path)
+  }
 
   return { nodes, edges, onNodesChange, onEdgesChange, focusOn }
 }
