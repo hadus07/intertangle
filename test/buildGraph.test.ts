@@ -80,6 +80,16 @@ describe('buildGraph', () => {
     expect(graph.reverse['src/c.ts']).toEqual(['src/b.ts'])
   })
 
+  it('respects .gitignore and drops ignored files and their edges', async () => {
+    const graph = await buildGraph(fixtureRoot('gitignored-files'))
+
+    expect(Object.keys(graph.nodes).sort()).toEqual(['src/index.ts', 'src/kept.ts'])
+    expect(graph.forward['src/index.ts']).toEqual(['src/kept.ts'])
+    expect(graph.reverse['src/kept.ts']).toEqual(['src/index.ts'])
+    expect(graph.nodes['src/ignored.ts']).toBeUndefined()
+    expect(graph.nodes['nested/file.ts']).toBeUndefined()
+  })
+
   it('resolves path aliases when run from a subdirectory', async () => {
     const root = fixtureRoot('ts-aliases')
     process.chdir(path.join(root, 'src'))

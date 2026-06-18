@@ -1,10 +1,74 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { type ICruiseOptions, cruise } from 'dependency-cruiser'
+import ignore from 'ignore'
 import JSON5 from 'json5'
 import type { ExternalLabel, ExternalLabelType, Graph, GraphNode } from './shared/graph.js'
 
 const LOCAL_TYPES = new Set(['local', 'localmodule'])
+
+type IgnoreMap = Map<string, ReturnType<typeof ignore>>
+
+function findGitRepoRoot(dir: string): string {
+  let current = path.resolve(dir)
+  while (true) {
+    if (fs.existsSync(path.join(current, '.git'))) return current
+    const parent = path.dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+  return current
+}
+
+function loadGitignores(scanRoot: string): IgnoreMap {
+  const repoRoot = findGitRepoRoot(scanRoot)
+  const ignores: IgnoreMap = new Map()
+
+  // .gitignore files from scan root up to the repo root apply to the scan.
+  let current = path.resolve(scanRoot)
+  while (true) {
+    const gitignorePath = path.join(current, '.gitignore')
+    if (fs.existsSync(gitignorePath)) {
+      const dirRel = path.relative(repoRoot, current).replaceAll('\\', '/')
+      ignores.set(dirRel || '', ignore().add(fs.readFileSync(gitignorePath, 'utf8')))
+    }
+    if (current === repoRoot) break
+    const parent = path.dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+
+  // Nested .gitignore files under the scan root refine the rules for subtrees.
+  const GITIGNORED_DIRS = new Set(['node_modules', '.git'])
+  function walk(dir: string) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      if (GITIGNORED_DIRS.has(entry.name)) continue
+      const childDir = path.join(dir, entry.name)
+      const gitignorePath = path.join(childDir, '.gitignore')
+      if (fs.existsSync(gitignorePath)) {
+        const dirRel = path.relative(repoRoot, childDir).replaceAll('\\', '/')
+        ignores.set(dirRel, ignore().add(fs.readFileSync(gitignorePath, 'utf8')))
+      }
+      walk(childDir)
+    }
+  }
+  walk(path.resolve(scanRoot))
+
+  return ignores
+}
+
+function isIgnored(projectRelativePath: string, scanRootRel: string, ignores: IgnoreMap): boolean {
+  const repoRelFile = scanRootRel ? `${scanRootRel}/${projectRelativePath}` : projectRelativePath
+  for (const [dirRel, ig] of ignores) {
+    if (dirRel !== '' && !repoRelFile.startsWith(`${dirRel}/`) && repoRelFile !== dirRel) {
+      continue
+    }
+    const rel = dirRel === '' ? repoRelFile : repoRelFile.slice(dirRel.length + 1)
+    if (ig.ignores(rel)) return true
+  }
+  return false
+}
 
 export async function buildGraph(root: string, tsconfig?: string): Promise<Graph> {
   const absoluteRoot = path.resolve(root)
@@ -22,7 +86,6 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
       path: 'node_modules',
       dependencyTypes: ['npm', 'npm-dev', 'npm-optional', 'npm-peer', 'core'],
     },
-    exclude: '(^|/)(dist|\\.git|coverage)(/|$)',
     moduleSystems: ['es6', 'cjs'],
     combinedDependencies: true,
     tsPreCompilationDeps: true,
@@ -42,14 +105,16 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
     external: {},
   }
 
+  const ignores = loadGitignores(absoluteRoot)
+  const repoRoot = findGitRepoRoot(absoluteRoot)
+  const scanRootRel = path.relative(repoRoot, absoluteRoot).replaceAll('\\', '/') || ''
+
   for (const mod of modules) {
     const raw = (mod as { source?: string }).source
     if (!raw || typeof raw !== 'string') continue
     const source = toProjectRelative(raw, absoluteRoot)
     if (!source) continue
-    // doNotFollow reports node_modules deps (so they can be labeled external) but
-    // doesn't crawl them; they still surface as modules. Never make them nodes.
-    if (`/${source}`.includes('/node_modules/')) continue
+    if (isIgnored(source, scanRootRel, ignores)) continue
     if (!isProjectFile(raw, absoluteRoot)) continue
 
     const node: GraphNode = {
@@ -71,12 +136,7 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
 
       if (isLocal(types, depResolved, absoluteRoot)) {
         const target = toProjectRelative(depResolved, absoluteRoot)
-        if (
-          target &&
-          target !== source &&
-          !target.startsWith('node_modules/') &&
-          !target.startsWith('../')
-        ) {
+        if (target && target !== source && !isIgnored(target, scanRootRel, ignores)) {
           graph.forward[source].push(target)
         }
       } else {

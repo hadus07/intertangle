@@ -71,6 +71,7 @@ matters and following dependencies in either direction, with the code in front o
 **Project scan & graph (the `buildGraph` module)**
 - Use **dependency-cruiser** to perform a single up-front scan that parses TS/JS, resolves module specifiers, and reads tsconfig `paths`/aliases.
 - dependency-cruiser is configured to **not follow** `node_modules`.
+- The module also loads every `.gitignore` at the project root and below, plus any `.gitignore` between the scan root and the git repository root. Files and directories that match are filtered out of the graph before nodes and edges are built.
 - The module returns a normalized in-memory graph: local-file **nodes**, **forward edges** (imports), **reverse edges** computed by inverting the forward edges (imported-by), and per-node **external labels** (dependencies tagged by dependency-cruiser as npm/core/unresolved).
 - The graph is a **snapshot** taken at startup; edges are not re-computed during the session.
 - tsconfig resolution: default to the root `tsconfig.json`; a `--tsconfig <path>` flag overrides; if none is found, only relative imports resolve.
@@ -118,6 +119,8 @@ graph:
 - Reverse edges correctly invert the forward edges (imported-by).
 - A project with tsconfig `paths` aliases resolves aliased imports to the right files.
 - External/npm/core imports appear as labels on the importing node, never as graph nodes, and `node_modules` is not traversed.
+- Files and directories matched by the project's `.gitignore` (root and nested) are omitted from the graph and from the file tree/search.
+- `node_modules` is treated like any other `.gitignore`d path; if it is not ignored, it still stays out of the graph because dependency-cruiser is configured not to follow it.
 - A project containing an import cycle produces a graph (no crash, both edges present).
 
 **Seam 2 — HTTP API.**
@@ -168,7 +171,7 @@ Settled at scaffold time; do not re-litigate.
 - **CLI name:** single bin `intertangle`. No alias (add later if wanted).
 - **Conventions:** conventional-commit prefixes (`feat:/fix:/chore:`) by habit, no enforcement tooling. Land each slice on a branch named like `01-walking-skeleton`; `git mv` the issue `docs/issues/open/NN.md` → `docs/issues/resolved/NN.md` in the landing commit as the done-signal.
 
-Full dependency set: runtime/build — `dependency-cruiser, @xyflow/react, elkjs, shiki, vite, tsup, open, cmdk`; dev — `vitest, @biomejs/biome, typescript`. Server is Node's built-in `http`. No new dependency is added for what a few lines can do.
+Full dependency set: runtime/build — `dependency-cruiser, @xyflow/react, elkjs, shiki, vite, tsup, open, cmdk, ignore`; dev — `vitest, @biomejs/biome, typescript`. Server is Node's built-in `http`. No new dependency is added for what a few lines can do; the `ignore` package is the standard gitignore matcher and replaces hand-rolled parsing.
 
 ## Further Notes
 
