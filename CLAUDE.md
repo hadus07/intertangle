@@ -10,7 +10,7 @@ Vite React frontend, fixtures, and seam tests now exist. Read before building:
 - `docs/prd/prd-import-graph-explorer.md` — full design, implementation decisions, locked scaffold decisions, testing seams. Authoritative.
 - `docs/issues/open/NN-*.md` — implementation slices; pick up at 02 once 01 lands.
 
-## What interweave is
+## What intertangle is
 
 A global CLI run inside any TS/JS project. It scans the project once with
 dependency-cruiser, starts a local Node `http` server, and opens the browser to an
@@ -41,7 +41,7 @@ go stale (restart to refresh them).
 
 - **Package manager:** npm, single package, no workspaces.
 - **Module system:** ESM (`"type": "module"`), target ES2022 (Node ≥18), `moduleResolution` Bundler. One root `tsconfig.json` with a `web/` override for DOM libs.
-- **Build:** Vite (frontend → `dist/web/`), tsup (CLI → `dist/cli.js`). Single `bin`: `interweave`.
+- **Build:** Vite (frontend → `dist/web/`), tsup (CLI → `dist/cli.js`). Single `bin`: `intertangle`.
 - **Lint/format:** Biome (`biome.json`). **Tests:** Vitest.
 - **Deps:** runtime/build — `dependency-cruiser, @xyflow/react, elkjs, shiki, vite, tsup, open, cmdk`; dev — `vitest, @biomejs/biome, typescript`. Don't add a dependency for what a few lines can do.
 

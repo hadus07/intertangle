@@ -34,7 +34,7 @@ Scaffold Decisions for the full rationale):
 
 ## Acceptance criteria
 
-- [x] `interweave <file> [...]` run in a TS/JS project opens the browser to the canvas. (manual-verify)
+- [x] `intertangle <file> [...]` run in a TS/JS project opens the browser to the canvas. (manual-verify)
 - [x] Each seed file appears as a folded card with its name and project-relative path. (manual-verify)
 - [x] The canvas can be panned and zoomed. (manual-verify)
 - [x] `GET /graph` returns local-file nodes and forward edges (relative imports) for a fixture project — verified against the `buildGraph` seam.

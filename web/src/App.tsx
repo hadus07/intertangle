@@ -98,7 +98,7 @@ export default function App() {
   const scopedPaths = Object.keys(graph.nodes).filter(inScope)
 
   return (
-    <PanelGroup direction="horizontal" autoSaveId="interweave:layout" style={{ height: '100vh' }}>
+    <PanelGroup direction="horizontal" autoSaveId="intertangle:layout" style={{ height: '100vh' }}>
       <Panel
         ref={panelRef}
         collapsible

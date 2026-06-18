@@ -3,7 +3,7 @@ import type { ExpandDirection } from '~shared/canvas'
 import type { Graph } from '~shared/graph'
 import { type GraphViewState, graphView } from './graphView'
 
-const excludedKey = (root: string) => `interweave:excluded:${root}`
+const excludedKey = (root: string) => `intertangle:excluded:${root}`
 
 function readSeeds(): Set<string> {
   const raw = new URLSearchParams(window.location.search).get('seeds')

@@ -15,6 +15,7 @@ export default function FilePalette({ paths: allPaths, excluded, open, onClose, 
 
   // cmdk keeps the active item in view, which scrolls the list down as results
   // reorder while typing. Snap back to the top on every query change.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: effect is intentionally triggered by query change
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0
   }, [query])

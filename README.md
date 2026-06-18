@@ -1,4 +1,4 @@
-# interweave
+# intertangle
 
 Explore a TypeScript/JavaScript project's import graph on an infinite canvas in your
 browser. Start from the files you care about and pull in their dependencies — in either
@@ -22,20 +22,20 @@ direction — on demand, with the source right there.
 ## Install
 
 ```sh
-npm i -g interweave
+npm i -g intertangle
 ```
 
 ## Usage
 
 ```sh
 # seed the canvas with specific files
-interweave src/index.ts api/server.ts
+intertangle src/index.ts api/server.ts
 
 # start empty and pick files with the in-browser fuzzy search (Cmd-K)
-interweave
+intertangle
 
 # point at a non-root tsconfig
-interweave src/index.ts --tsconfig packages/app/tsconfig.json
+intertangle src/index.ts --tsconfig packages/app/tsconfig.json
 ```
 
 The tool scans the current directory, starts a local server, and opens your browser.

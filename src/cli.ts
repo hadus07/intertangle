@@ -45,7 +45,7 @@ async function main() {
   if (scope.length > 0) {
     url.searchParams.set('scope', scope.join(','))
   }
-  console.log(`interweave running at ${url}`)
+  console.log(`intertangle running at ${url}`)
   if (!process.env.INTERWEAVE_NO_OPEN) {
     await open(url.toString())
   }

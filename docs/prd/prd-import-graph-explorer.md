@@ -1,4 +1,4 @@
-# PRD: interweave
+# PRD: intertangle
 
 A global terminal utility that scans a TS/JS project once, opens a browser with an
 infinite canvas, and lets you explore the import/export graph by expanding file cards
@@ -147,7 +147,7 @@ automated browser tests in v1.
 - **Live file watching / auto re-scan.** The graph is a startup snapshot. Since source is read live per request, only changed *edges* require a restart. A manual rescan button, then a chokidar watcher, are the staged upgrades if editing-while-open becomes a real workflow.
 - **Region / signature views** (showing only the import/export region of a file). Whole-file scroll box only.
 - **Layout persistence** across sessions — *partially relaxed by slice 07*: sidebar panel width
-  (global `autoSaveId`) and per-project file exclusions (`localStorage["interweave:excluded:"+root]`)
+  (global `autoSaveId`) and per-project file exclusions (`localStorage["intertangle:excluded:"+root]`)
   now persist client-side. This is the tool's first client-side persisted state; it does not touch
   the graph/edge snapshot model. Canvas node positions are still not persisted.
 - **Multi-tsconfig merging** for complex monorepos. Single root tsconfig or explicit `--tsconfig` flag only.
@@ -165,7 +165,7 @@ Settled at scaffold time; do not re-litigate.
 - **Lint/format:** Biome (single `biome.json`).
 - **Test runner:** Vitest. Fixtures are real throwaway projects under `test/fixtures/<case>/` (`relative-imports/`, `ts-aliases/`, `cycle/`, `external-deps/`); seam tests in `test/*.test.ts`.
 - **Fuzzy palette:** `cmdk` (provides the full Cmd-K modal, ranked list, and keyboard nav).
-- **CLI name:** single bin `interweave`. No alias (add later if wanted).
+- **CLI name:** single bin `intertangle`. No alias (add later if wanted).
 - **Conventions:** conventional-commit prefixes (`feat:/fix:/chore:`) by habit, no enforcement tooling. Land each slice on a branch named like `01-walking-skeleton`; `git mv` the issue `docs/issues/open/NN.md` → `docs/issues/resolved/NN.md` in the landing commit as the done-signal.
 
 Full dependency set: runtime/build — `dependency-cruiser, @xyflow/react, elkjs, shiki, vite, tsup, open, cmdk`; dev — `vitest, @biomejs/biome, typescript`. Server is Node's built-in `http`. No new dependency is added for what a few lines can do.
@@ -175,4 +175,4 @@ Full dependency set: runtime/build — `dependency-cruiser, @xyflow/react, elkjs
 - The reverse-dependency requirement ("imported by") is what forces the single up-front whole-project scan; it cannot be done lazily because there is no way to know who imports a file without indexing everything. This is the justification for the snapshot-at-startup architecture.
 - Expanded card source is always current because `/file` reads from disk on demand; the only thing the snapshot can go stale on is the set of edges.
 - The `/file` path-traversal guard is the one hard security boundary in an otherwise local, read-only tool and must not be simplified away.
-- CLI command name finalized as a single `interweave` bin (no alias). See Scaffold Decisions.
+- CLI command name finalized as a single `intertangle` bin (no alias). See Scaffold Decisions.

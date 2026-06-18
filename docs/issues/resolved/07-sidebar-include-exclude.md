@@ -47,7 +47,7 @@ filter and a navigator (click a file to seed it).
   via the panel ref.
 
 **Persistence**
-- Exclusions persist to `localStorage["interweave:excluded:" + graph.root]` — project-keyed
+- Exclusions persist to `localStorage["intertangle:excluded:" + graph.root]` — project-keyed
   (collision-free across projects sharing a port), hydrated on load. No server changes;
   `graph.root` is already in the `/graph` payload.
 - Panel width persists via a single global `autoSaveId` (a width preference is

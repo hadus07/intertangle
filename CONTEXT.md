@@ -1,6 +1,6 @@
-# interweave
+# intertangle
 
-Domain language for interweave — a local CLI that scans a TS/JS project's import
+Domain language for intertangle — a local CLI that scans a TS/JS project's import
 graph and renders it as an infinite canvas of file cards you expand along edges.
 
 ## Language
