@@ -18,20 +18,16 @@ export interface FileCardData extends GraphNode, CardHandlers, Record<string, un
   externals: ExternalLabel[]
 }
 
-// Pure projection: graph + visible set (minus excluded) → React Flow nodes/edges.
-// No positions (all 0,0) and no elk — layout() owns geometry. Counts are net of
-// exclusion so a card's chips reflect only what's currently on the canvas.
-export function projectGraph(
+function buildNodes(
   graph: Graph,
   visible: Set<string>,
   excluded?: Set<string>,
-): { nodes: Node<FileCardData>[]; edges: Edge[] } {
+): Node<FileCardData>[] {
   const nodes: Node<FileCardData>[] = []
   for (const id of [...visible].sort()) {
     if (excluded?.has(id)) continue
     const node = graph.nodes[id]
     if (!node) continue
-
     nodes.push({
       id,
       type: 'fileCard',
@@ -45,17 +41,42 @@ export function projectGraph(
       measured: { width: CARD_WIDTH, height: CARD_HEIGHT },
     })
   }
+  return nodes
+}
 
-  const edges: Edge[] = []
-  for (const [source, targets] of Object.entries(graph.forward)) {
-    if (!visible.has(source) || excluded?.has(source)) continue
-    for (const target of targets) {
-      if (!visible.has(target) || excluded?.has(target)) continue
-      edges.push({ id: `${source}->${target}`, source, target, type: 'gradient' })
-    }
+function addVisibleEdges(
+  source: string,
+  targets: string[],
+  visible: Set<string>,
+  excluded: Set<string> | undefined,
+  edges: Edge[],
+) {
+  if (!visible.has(source) || excluded?.has(source)) return
+  for (const target of targets) {
+    if (!visible.has(target) || excluded?.has(target)) continue
+    edges.push({ id: `${source}->${target}`, source, target, type: 'gradient' })
   }
+}
 
-  return { nodes, edges }
+function buildEdges(graph: Graph, visible: Set<string>, excluded?: Set<string>): Edge[] {
+  const edges: Edge[] = []
+  for (const [source, targets] of Object.entries(graph.forward))
+    addVisibleEdges(source, targets, visible, excluded, edges)
+  return edges
+}
+
+// Pure projection: graph + visible set (minus excluded) → React Flow nodes/edges.
+// No positions (all 0,0) and no elk — layout() owns geometry. Counts are net of
+// exclusion so a card's chips reflect only what's currently on the canvas.
+export function projectGraph(
+  graph: Graph,
+  visible: Set<string>,
+  excluded?: Set<string>,
+): { nodes: Node<FileCardData>[]; edges: Edge[] } {
+  return {
+    nodes: buildNodes(graph, visible, excluded),
+    edges: buildEdges(graph, visible, excluded),
+  }
 }
 
 // Geometry-only seam: position the given nodes with elk and return them with

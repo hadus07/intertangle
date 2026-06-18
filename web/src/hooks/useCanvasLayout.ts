@@ -4,6 +4,18 @@ import { CARD_HEIGHT, type FileCardData, layout, projectGraph } from '~shared/ca
 import type { Graph } from '~shared/graph'
 import { type CardHandlers, reconcileCanvasNodes } from '../lib/mergeNodes'
 
+function collectMeasuredSizes(
+  nodes: Node<FileCardData>[],
+): Map<string, { width: number; height: number }> | null {
+  const sizes = new Map<string, { width: number; height: number }>()
+  for (const n of nodes) {
+    const { width, height } = n.measured ?? {}
+    if (!width || !height) return null
+    sizes.set(n.id, { width, height })
+  }
+  return sizes
+}
+
 export function useCanvasLayout(
   graph: Graph | null,
   expanded: Set<string>,
@@ -46,12 +58,8 @@ export function useCanvasLayout(
   // never overlap regardless of external rows or expanded source length.
   useEffect(() => {
     if (!graph || nodes.length === 0) return
-    const sizes = new Map<string, { width: number; height: number }>()
-    for (const n of nodes) {
-      const { width, height } = n.measured ?? {}
-      if (!width || !height) return // wait until every node is measured
-      sizes.set(n.id, { width, height })
-    }
+    const sizes = collectMeasuredSizes(nodes)
+    if (!sizes) return // wait until every node is measured
     const sig = [...sizes]
       .map(([id, s]) => `${id}:${s.width}:${s.height}`)
       .sort()

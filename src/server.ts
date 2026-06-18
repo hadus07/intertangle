@@ -71,6 +71,105 @@ export interface ServerHandle {
   close(): Promise<void>
 }
 
+async function handleGraph(graph: Graph, res: http.ServerResponse) {
+  res.writeHead(200, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify(graph))
+}
+
+async function handleOpen(graph: Graph, url: URL, res: http.ServerResponse) {
+  const parsed = PathParam.safeParse(url.searchParams.get('path'))
+  if (!parsed.success) {
+    res.writeHead(400)
+    res.end('Bad request')
+    return
+  }
+  const real = await resolveInside(graph.root, decodeURIComponent(parsed.data))
+  if (!real) {
+    res.writeHead(403)
+    res.end('Forbidden')
+    return
+  }
+  try {
+    // ponytail: opens in the OS default app for the file type; if that's not
+    // the user's editor, this is where an explicit `code`/$EDITOR call goes.
+    await open(real)
+    res.writeHead(204)
+    res.end()
+  } catch {
+    res.writeHead(500)
+    res.end('Failed to open')
+  }
+}
+
+async function handleFile(graph: Graph, url: URL, res: http.ServerResponse) {
+  const parsed = PathParam.safeParse(url.searchParams.get('path'))
+  if (!parsed.success) {
+    res.writeHead(400)
+    res.end('Bad request')
+    return
+  }
+  const real = await resolveInside(graph.root, decodeURIComponent(parsed.data))
+  if (!real) {
+    res.writeHead(403)
+    res.end('Forbidden')
+    return
+  }
+  try {
+    const stat = await fs.stat(real)
+    if (!stat.isFile()) {
+      res.writeHead(404)
+      res.end('Not found')
+      return
+    }
+    const html = await highlightFile(real)
+    res.writeHead(200, { 'Content-Type': 'text/html' })
+    res.end(html)
+  } catch {
+    res.writeHead(404)
+    res.end('Not found')
+  }
+}
+
+async function handleStatic(webRoot: string, assetsUrl: URL, url: URL, res: http.ServerResponse) {
+  const rawPath = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname)
+  const target = await resolveInside(webRoot, rawPath.replace(/^\/+/, ''))
+  if (!target) {
+    res.writeHead(403)
+    res.end('Forbidden')
+    return
+  }
+  try {
+    const data = await fs.readFile(target)
+    res.writeHead(200, {
+      'Content-Type': MIME_TYPES[path.extname(target)] ?? 'application/octet-stream',
+    })
+    res.end(data)
+  } catch {
+    try {
+      const fallback = await fs.readFile(new URL('index.html', assetsUrl))
+      res.writeHead(200, { 'Content-Type': 'text/html' })
+      res.end(fallback)
+    } catch {
+      res.writeHead(404)
+      res.end('Not found')
+    }
+  }
+}
+
+async function routeRequest(
+  graph: Graph,
+  webRoot: string,
+  assetsUrl: URL,
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+) {
+  const url = new URL(req.url ?? '/', 'http://localhost')
+  if (url.pathname === '/graph' && req.method === 'GET') return handleGraph(graph, res)
+  if (url.pathname === '/open' && req.method === 'GET') return handleOpen(graph, url, res)
+  if (url.pathname === '/file' && req.method === 'GET') return handleFile(graph, url, res)
+  return handleStatic(webRoot, assetsUrl, url, res)
+}
+
 export function startServer(
   graph: Graph,
   assetsUrl: URL = defaultAssetsUrl,
@@ -78,102 +177,7 @@ export function startServer(
 ): Promise<ServerHandle> {
   const webRoot = fileURLToPath(assetsUrl)
 
-  const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url ?? '/', 'http://localhost')
-
-    if (url.pathname === '/graph' && req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify(graph))
-      return
-    }
-
-    if (url.pathname === '/open' && req.method === 'GET') {
-      const parsed = PathParam.safeParse(url.searchParams.get('path'))
-      if (!parsed.success) {
-        res.writeHead(400)
-        res.end('Bad request')
-        return
-      }
-      const decodedPath = decodeURIComponent(parsed.data)
-      const real = await resolveInside(graph.root, decodedPath)
-      if (!real) {
-        res.writeHead(403)
-        res.end('Forbidden')
-        return
-      }
-      try {
-        // ponytail: opens in the OS default app for the file type; if that's not
-        // the user's editor, this is where an explicit `code`/$EDITOR call goes.
-        await open(real)
-        res.writeHead(204)
-        res.end()
-      } catch {
-        res.writeHead(500)
-        res.end('Failed to open')
-      }
-      return
-    }
-
-    if (url.pathname === '/file' && req.method === 'GET') {
-      const parsedFile = PathParam.safeParse(url.searchParams.get('path'))
-      if (!parsedFile.success) {
-        res.writeHead(400)
-        res.end('Bad request')
-        return
-      }
-      const decodedPath = decodeURIComponent(parsedFile.data)
-
-      const real = await resolveInside(graph.root, decodedPath)
-      if (!real) {
-        res.writeHead(403)
-        res.end('Forbidden')
-        return
-      }
-
-      try {
-        const stat = await fs.stat(real)
-        if (!stat.isFile()) {
-          res.writeHead(404)
-          res.end('Not found')
-          return
-        }
-
-        const html = await highlightFile(real)
-        res.writeHead(200, { 'Content-Type': 'text/html' })
-        res.end(html)
-      } catch {
-        res.writeHead(404)
-        res.end('Not found')
-      }
-
-      return
-    }
-
-    const rawPath = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname)
-    const target = await resolveInside(webRoot, rawPath.replace(/^\/+/, ''))
-
-    if (!target) {
-      res.writeHead(403)
-      res.end('Forbidden')
-      return
-    }
-
-    try {
-      const data = await fs.readFile(target)
-      const ext = path.extname(target)
-      res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream' })
-      res.end(data)
-    } catch {
-      try {
-        const fallback = await fs.readFile(new URL('index.html', assetsUrl))
-        res.writeHead(200, { 'Content-Type': 'text/html' })
-        res.end(fallback)
-      } catch {
-        res.writeHead(404)
-        res.end('Not found')
-      }
-    }
-  })
+  const server = http.createServer((req, res) => routeRequest(graph, webRoot, assetsUrl, req, res))
 
   return new Promise((resolve, reject) => {
     server.once('error', reject)

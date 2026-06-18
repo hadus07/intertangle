@@ -63,20 +63,18 @@ export default function App() {
     else panel.collapse()
   }
 
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        setPaletteOpen(true)
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
-        e.preventDefault()
-        const panel = panelRef.current
-        if (!panel) return
-        if (panel.isCollapsed()) panel.expand()
-        else panel.collapse()
-      }
+  function onKeyDown(e: KeyboardEvent) {
+    if (!e.metaKey && !e.ctrlKey) return
+    e.preventDefault()
+    if (e.key === 'k') {
+      setPaletteOpen(true)
+      return
     }
+    if (e.key === 'b') toggleSidebar()
+  }
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: stable refs (panelRef) and stable setter (setPaletteOpen) — same semantics as the original []
+  useEffect(() => {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])

@@ -3,7 +3,7 @@ import path from 'node:path'
 import { type ICruiseOptions, cruise } from 'dependency-cruiser'
 import ignore from 'ignore'
 import JSON5 from 'json5'
-import type { ExternalLabel, ExternalLabelType, Graph, GraphNode } from './shared/graph.js'
+import type { ExternalLabel, ExternalLabelType, Graph } from './shared/graph.js'
 
 const LOCAL_TYPES = new Set(['local', 'localmodule'])
 const GITIGNORED_DIRS = new Set(['node_modules', '.git'])
@@ -38,35 +38,87 @@ function loadAncestorGitignores(scanRoot: string, repoRoot: string): IgnoreMap {
   return ignores
 }
 
+function walkDescendantGitignores(dir: string, repoRoot: string, ignores: IgnoreMap) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || GITIGNORED_DIRS.has(entry.name)) continue
+    const childDir = path.join(dir, entry.name)
+    if (fs.existsSync(path.join(childDir, '.gitignore'))) {
+      const dirRel = path.relative(repoRoot, childDir).replaceAll('\\', '/')
+      ignores.set(dirRel, ignore().add(fs.readFileSync(path.join(childDir, '.gitignore'), 'utf8')))
+    }
+    walkDescendantGitignores(childDir, repoRoot, ignores)
+  }
+}
+
 function loadDescendantGitignores(scanRoot: string, repoRoot: string): IgnoreMap {
   const ignores: IgnoreMap = new Map()
-  function walk(dir: string) {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue
-      if (GITIGNORED_DIRS.has(entry.name)) continue
-      const childDir = path.join(dir, entry.name)
-      const gitignorePath = path.join(childDir, '.gitignore')
-      if (fs.existsSync(gitignorePath)) {
-        const dirRel = path.relative(repoRoot, childDir).replaceAll('\\', '/')
-        ignores.set(dirRel, ignore().add(fs.readFileSync(gitignorePath, 'utf8')))
-      }
-      walk(childDir)
-    }
-  }
-  walk(path.resolve(scanRoot))
+  walkDescendantGitignores(path.resolve(scanRoot), repoRoot, ignores)
   return ignores
+}
+
+function matchesIgnoreEntry(
+  repoRelFile: string,
+  dirRel: string,
+  ignorer: ReturnType<typeof ignore>,
+): boolean {
+  if (dirRel !== '' && !repoRelFile.startsWith(`${dirRel}/`) && repoRelFile !== dirRel) return false
+  const rel = dirRel === '' ? repoRelFile : repoRelFile.slice(dirRel.length + 1)
+  return ignorer.ignores(rel)
 }
 
 function isIgnored(projectRelativePath: string, scanRootRel: string, ignores: IgnoreMap): boolean {
   const repoRelFile = scanRootRel ? `${scanRootRel}/${projectRelativePath}` : projectRelativePath
   for (const [dirRel, ignorer] of ignores) {
-    if (dirRel !== '' && !repoRelFile.startsWith(`${dirRel}/`) && repoRelFile !== dirRel) {
-      continue
-    }
-    const rel = dirRel === '' ? repoRelFile : repoRelFile.slice(dirRel.length + 1)
-    if (ignorer.ignores(rel)) return true
+    if (matchesIgnoreEntry(repoRelFile, dirRel, ignorer)) return true
   }
   return false
+}
+
+function addDependencyToGraph(
+  graph: Graph,
+  dep: unknown,
+  source: string,
+  absoluteRoot: string,
+  scanRootRel: string,
+  ignores: IgnoreMap,
+) {
+  const depModule = (dep as { module?: string }).module ?? ''
+  const depResolved = (dep as { resolved?: string }).resolved ?? depModule
+  const types = ((dep as { dependencyTypes?: string[] }).dependencyTypes ?? []).filter(
+    (t): t is string => typeof t === 'string',
+  )
+  if (isLocal(types, depResolved, absoluteRoot)) {
+    const target = toProjectRelative(depResolved, absoluteRoot)
+    if (target && target !== source && !isIgnored(target, scanRootRel, ignores))
+      graph.forward[source].push(target)
+  } else {
+    graph.external[source].push({ name: depModule, type: classifyExternal(types) })
+  }
+}
+
+function addModuleToGraph(
+  graph: Graph,
+  mod: unknown,
+  absoluteRoot: string,
+  scanRootRel: string,
+  ignores: IgnoreMap,
+) {
+  const modulePath = (mod as { source?: string }).source
+  if (!modulePath || typeof modulePath !== 'string') return
+  const source = toProjectRelative(modulePath, absoluteRoot)
+  if (
+    !source ||
+    isIgnored(source, scanRootRel, ignores) ||
+    !isProjectFile(modulePath, absoluteRoot)
+  )
+    return
+  graph.nodes[source] = { path: source, name: path.posix.basename(source) }
+  graph.forward[source] = []
+  graph.external[source] = []
+  for (const dep of (mod as { dependencies?: unknown[] }).dependencies ?? [])
+    addDependencyToGraph(graph, dep, source, absoluteRoot, scanRootRel, ignores)
+  graph.forward[source] = sortedUnique(graph.forward[source])
+  graph.external[source] = uniqueLabels(graph.external[source])
 }
 
 function buildReverseIndex(forward: Record<string, string[]>): Record<string, string[]> {
@@ -126,43 +178,7 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
   ])
   const scanRootRel = path.relative(repoRoot, absoluteRoot).replaceAll('\\', '/') || ''
 
-  for (const mod of modules) {
-    const modulePath = (mod as { source?: string }).source
-    if (!modulePath || typeof modulePath !== 'string') continue
-    const source = toProjectRelative(modulePath, absoluteRoot)
-    if (!source) continue
-    if (isIgnored(source, scanRootRel, ignores)) continue
-    if (!isProjectFile(modulePath, absoluteRoot)) continue
-
-    const node: GraphNode = {
-      path: source,
-      name: path.posix.basename(source),
-    }
-    graph.nodes[source] = node
-    graph.forward[source] = []
-    graph.external[source] = []
-
-    const deps = (mod as { dependencies?: unknown[] }).dependencies ?? []
-    for (const dep of deps) {
-      const depModule = (dep as { module?: string }).module ?? ''
-      const depResolved = (dep as { resolved?: string }).resolved ?? depModule
-      const types = ((dep as { dependencyTypes?: string[] }).dependencyTypes ?? []).filter(
-        (t): t is string => typeof t === 'string',
-      )
-
-      if (isLocal(types, depResolved, absoluteRoot)) {
-        const target = toProjectRelative(depResolved, absoluteRoot)
-        if (target && target !== source && !isIgnored(target, scanRootRel, ignores)) {
-          graph.forward[source].push(target)
-        }
-      } else {
-        graph.external[source].push({ name: depModule, type: classifyExternal(types) })
-      }
-    }
-
-    graph.forward[source] = sortedUnique(graph.forward[source])
-    graph.external[source] = uniqueLabels(graph.external[source])
-  }
+  for (const mod of modules) addModuleToGraph(graph, mod, absoluteRoot, scanRootRel, ignores)
 
   graph.reverse = buildReverseIndex(graph.forward)
 
