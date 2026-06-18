@@ -25,10 +25,6 @@ const SCOPE = (() => {
   return raw ? raw.split(',').filter(Boolean) : []
 })()
 
-const HAS_ARGS =
-  new URLSearchParams(window.location.search).has('seeds') ||
-  new URLSearchParams(window.location.search).has('scope')
-
 const inScope = (p: string) =>
   SCOPE.length === 0 || SCOPE.some((s) => p === s || p.startsWith(`${s}/`))
 
@@ -46,7 +42,7 @@ export default function App() {
     setExclusion,
     clear,
   } = useGraphView(graph)
-  const [paletteOpen, setPaletteOpen] = useState(!HAS_ARGS)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const panelRef = useRef<ImperativePanelHandle>(null)
   const { nodes, edges, onNodesChange, onEdgesChange, focusOn } = useCanvasLayout(
     graph,

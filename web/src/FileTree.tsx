@@ -1,5 +1,5 @@
 import { ChevronsDownUp, ChevronsUpDown, File, Folder } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { type TreeNode, buildTree, descendantFiles } from './treeBuilder'
 
 interface Props {
@@ -29,6 +29,14 @@ export default function FileTree({ paths, excluded, activePath, onSetExcluded, o
   const [collapsed, setCollapsed] = useState<Set<string>>(
     () => new Set(fullyExcludedFolders(tree, excluded)),
   )
+  // Hydration: excluded starts empty and is restored after first render; reseed collapse then.
+  const excludedSizeOnMount = useRef(excluded.size)
+  const hasHydrated = excludedSizeOnMount.current === 0 && excluded.size > 0
+  useEffect(() => {
+    if (hasHydrated) {
+      setCollapsed(new Set(fullyExcludedFolders(tree, excluded)))
+    }
+  }, [hasHydrated, tree, excluded])
 
   const collapseAll = () => setCollapsed(new Set(folderPaths(tree)))
   const expandAll = () => setCollapsed(new Set())

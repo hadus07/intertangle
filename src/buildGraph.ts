@@ -7,14 +7,16 @@ import type { ExternalLabel, ExternalLabelType, Graph, GraphNode } from './share
 const LOCAL_TYPES = new Set(['local', 'localmodule'])
 
 export async function buildGraph(root: string, tsconfig?: string): Promise<Graph> {
+  const absoluteRoot = path.resolve(root)
+
   // Explicit --tsconfig wins; otherwise merge paths from every tsconfig in the
   // project so aliases living in a nested config (e.g. web/tsconfig.json) still
   // resolve to local edges instead of dropping to inert "unresolved" labels.
-  const tsconfigs = tsconfig ? [tsconfig] : findTsconfigs(root)
+  const tsconfigs = tsconfig ? [tsconfig] : findTsconfigs(absoluteRoot)
   const alias = Object.assign({}, ...tsconfigs.map(tsconfigAlias))
 
   const options = {
-    baseDir: root,
+    baseDir: absoluteRoot,
     outputType: 'json',
     doNotFollow: {
       path: 'node_modules',
@@ -33,7 +35,7 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
   const modules = (JSON.parse(result.output as string) as { modules?: unknown[] }).modules ?? []
 
   const graph: Graph = {
-    root,
+    root: absoluteRoot,
     nodes: {},
     forward: {},
     reverse: {},
@@ -43,12 +45,12 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
   for (const mod of modules) {
     const raw = (mod as { source?: string }).source
     if (!raw || typeof raw !== 'string') continue
-    const source = toProjectRelative(raw, root)
+    const source = toProjectRelative(raw, absoluteRoot)
     if (!source) continue
     // doNotFollow reports node_modules deps (so they can be labeled external) but
     // doesn't crawl them; they still surface as modules. Never make them nodes.
     if (`/${source}`.includes('/node_modules/')) continue
-    if (!isProjectFile(raw, root)) continue
+    if (!isProjectFile(raw, absoluteRoot)) continue
 
     const node: GraphNode = {
       path: source,
@@ -67,8 +69,8 @@ export async function buildGraph(root: string, tsconfig?: string): Promise<Graph
         (t): t is string => typeof t === 'string',
       )
 
-      if (isLocal(types, depResolved, root)) {
-        const target = toProjectRelative(depResolved, root)
+      if (isLocal(types, depResolved, absoluteRoot)) {
+        const target = toProjectRelative(depResolved, absoluteRoot)
         if (
           target &&
           target !== source &&

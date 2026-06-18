@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import path from 'node:path'
+import process from 'node:process'
+import { afterEach, describe, expect, it } from 'vitest'
 import { buildGraph } from '../src/buildGraph.js'
 import { fixtureRoot } from './helpers.js'
+
+const originalCwd = process.cwd()
+afterEach(() => process.chdir(originalCwd))
 
 describe('buildGraph', () => {
   it('finds forward edges for relative imports', async () => {
@@ -73,5 +78,15 @@ describe('buildGraph', () => {
     expect(graph.reverse['src/a.ts']).toEqual(['src/c.ts'])
     expect(graph.reverse['src/b.ts']).toEqual(['src/a.ts'])
     expect(graph.reverse['src/c.ts']).toEqual(['src/b.ts'])
+  })
+
+  it('resolves path aliases when run from a subdirectory', async () => {
+    const root = fixtureRoot('ts-aliases')
+    process.chdir(path.join(root, 'src'))
+
+    const graph = await buildGraph('..')
+
+    expect(Object.keys(graph.nodes).sort()).toEqual(['src/index.ts', 'src/utils.ts'])
+    expect(graph.forward['src/index.ts']).toEqual(['src/utils.ts'])
   })
 })
