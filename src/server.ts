@@ -187,7 +187,7 @@ export function startServer(
         close: () =>
           new Promise<void>((res, rej) => {
             server.closeAllConnections?.()
-            server.close((err) => (err ? rej(err) : res()))
+            server.close(err => (err ? rej(err) : res()))
           }),
       })
     })

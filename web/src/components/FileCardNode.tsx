@@ -16,8 +16,18 @@ const actionBase =
 // pass-2 reposition). Position/selected updates keep data ref stable, so memo skips
 // the re-render unless this card's own data actually changed.
 function FileCardNode({ data }: NodeProps) {
-  const { name, path, importCount, importedByCount, externals, importsExpandable, importedByExpandable, onExpand, onShowSource, onRemove } =
-    data as Required<FileCardData>
+  const {
+    name,
+    path,
+    importCount,
+    importedByCount,
+    externals,
+    importsExpandable,
+    importedByExpandable,
+    onExpand,
+    onShowSource,
+    onRemove,
+  } = data as Required<FileCardData>
 
   return (
     <div className="inline-flex flex-col border border-strong border-t-2 border-t-accent rounded-lg bg-elevated font-sans text-text overflow-hidden [.react-flow__node.selected_&]:border-accent [.react-flow__node.selected_&]:shadow-[0_0_0_1px_var(--iw-accent),0_0_20px_var(--iw-accent-glow)]">
@@ -36,7 +46,7 @@ function FileCardNode({ data }: NodeProps) {
             type="button"
             className={`${actionBase} hover:text-accent-hover hover:bg-accent-wash-soft`}
             title="View source"
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={e => e.stopPropagation()}
             onClick={() => onShowSource(path)}
           >
             <Code2 size={12} />
@@ -45,7 +55,7 @@ function FileCardNode({ data }: NodeProps) {
             type="button"
             className={`${actionBase} hover:text-danger hover:bg-danger-wash`}
             title="Remove from canvas"
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={e => e.stopPropagation()}
             onClick={() => onRemove(path)}
           >
             <X size={12} />
@@ -57,7 +67,7 @@ function FileCardNode({ data }: NodeProps) {
           type="button"
           disabled={importCount === 0 || !importsExpandable}
           className="appearance-none bg-transparent outline-none flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-[5px] text-[11px] font-sans cursor-pointer whitespace-nowrap transition-[border-color,color,background] duration-150 tracking-[0.01em] border border-chip-imports text-accent-dim hover:border-accent hover:text-accent-hover hover:bg-accent-wash-faint disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-chip-imports disabled:hover:text-accent-dim disabled:hover:bg-transparent"
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
           onClick={() => onExpand(path, 'imports')}
         >
           <ArrowUpLeft size={12} /> imports {importCount}
@@ -66,7 +76,7 @@ function FileCardNode({ data }: NodeProps) {
           type="button"
           disabled={importedByCount === 0 || !importedByExpandable}
           className="appearance-none bg-transparent outline-none flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-[5px] text-[11px] font-sans cursor-pointer whitespace-nowrap transition-[border-color,color,background] duration-150 tracking-[0.01em] border border-chip-importedby text-info-dim hover:border-info hover:text-info-hover hover:bg-info-wash disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-chip-importedby disabled:hover:text-info-dim disabled:hover:bg-transparent"
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
           onClick={() => onExpand(path, 'importedBy')}
         >
           imported by {importedByCount} <ArrowDownRight size={12} />
@@ -74,7 +84,7 @@ function FileCardNode({ data }: NodeProps) {
       </div>
       {externals.length > 0 && (
         <div className="flex flex-wrap gap-1 px-2.5 pb-2 w-0 min-w-full">
-          {externals.map((label) => (
+          {externals.map(label => (
             <span
               key={label.name}
               title={`${label.type}: ${label.name}`}

@@ -21,9 +21,9 @@ export function globToRegExp(pattern: string): RegExp {
 }
 
 export function matchAny(patterns: string[], path: string): boolean {
-  return patterns.some((p) => {
+  return patterns.some(p => {
     const re = globToRegExp(p)
     if (p.includes('/')) return re.test(path)
-    return path.split('/').some((seg) => re.test(seg))
+    return path.split('/').some(seg => re.test(seg))
   })
 }

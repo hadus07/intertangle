@@ -45,8 +45,8 @@ function ChipInput({
       <input
         type="text"
         value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => {
           if (e.key === 'Enter') {
             e.preventDefault()
             commit()
@@ -60,7 +60,7 @@ function ChipInput({
       />
       {chips.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5">
-          {chips.map((chip) => (
+          {chips.map(chip => (
             <span
               key={chip}
               className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-elevated border border-strong text-secondary"
@@ -94,12 +94,12 @@ interface Props {
 }
 
 function folderPaths(nodes: TreeNode[]): string[] {
-  return nodes.flatMap((n) => (n.isFile ? [] : [n.path, ...folderPaths(n.children)]))
+  return nodes.flatMap(n => (n.isFile ? [] : [n.path, ...folderPaths(n.children)]))
 }
 
 function fullyExcludedFolders(nodes: TreeNode[], excluded: Set<string>): string[] {
-  return nodes.flatMap((n) =>
-    n.isFile || descendantFiles(n).some((f) => !excluded.has(f))
+  return nodes.flatMap(n =>
+    n.isFile || descendantFiles(n).some(f => !excluded.has(f))
       ? n.isFile
         ? []
         : fullyExcludedFolders(n.children, excluded)
@@ -135,14 +135,14 @@ export default function FileTree({
   // Reveal the selected file: drop any collapsed folder that is its ancestor.
   useEffect(() => {
     if (!activePath) return
-    setCollapsed((prev) => {
-      const next = new Set([...prev].filter((p) => !activePath.startsWith(`${p}/`)))
+    setCollapsed(prev => {
+      const next = new Set([...prev].filter(p => !activePath.startsWith(`${p}/`)))
       return next.size === prev.size ? prev : next
     })
   }, [activePath])
-  
+
   function onToggle(path: string, open: boolean) {
-    setCollapsed((prev) => {
+    setCollapsed(prev => {
       const next = new Set(prev)
       if (open) next.delete(path)
       else next.add(path)
@@ -150,7 +150,7 @@ export default function FileTree({
     })
   }
 
-  const allCollapsed = folderPaths(tree).every((p) => collapsed.has(p))
+  const allCollapsed = folderPaths(tree).every(p => collapsed.has(p))
 
   const iconBtnClass =
     'inline-flex items-center justify-center w-5 h-5 p-0 border border-strong rounded-md bg-elevated text-muted cursor-pointer transition-colors duration-120 hover:text-accent-hover hover:border-accent'
@@ -173,7 +173,7 @@ export default function FileTree({
         </div>
         <ChipInput chips={chips} onAddChip={onAddChip} onRemoveChip={onRemoveChip} />
       </div>
-      {tree.map((node) => (
+      {tree.map(node => (
         <Row
           key={node.path}
           node={node}
@@ -290,7 +290,7 @@ function Row({
   }
 
   const files = descendantFiles(node)
-  const includedCount = files.filter((f) => !excluded.has(f)).length
+  const includedCount = files.filter(f => !excluded.has(f)).length
   const allIncluded = includedCount === files.length
   const someIncluded = includedCount > 0 && !allIncluded
   const fullyExcluded = includedCount === 0
@@ -298,7 +298,7 @@ function Row({
   return (
     <details
       open={!collapsed.has(node.path)}
-      onToggle={(e) => onToggle(node.path, e.currentTarget.open)}
+      onToggle={e => onToggle(node.path, e.currentTarget.open)}
     >
       <summary
         className="group flex items-center gap-1.5 px-1 py-0.5 rounded cursor-default whitespace-nowrap list-none"
@@ -318,18 +318,18 @@ function Row({
         <input
           type="checkbox"
           checked={allIncluded}
-          ref={(el) => {
+          ref={el => {
             if (el) el.indeterminate = someIncluded
           }}
           className="ml-auto shrink-0 w-3.5 h-3.5 cursor-pointer m-0 accent-accent transition-opacity duration-120 opacity-30 group-hover:opacity-100"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
           onChange={() => {
             onSetExcluded(files, allIncluded)
             if (allIncluded) onToggle(node.path, false) // deselecting → fold
           }}
         />
       </summary>
-      {node.children.map((child) => (
+      {node.children.map(child => (
         <Row
           key={child.path}
           node={child}

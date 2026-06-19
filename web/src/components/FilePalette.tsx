@@ -22,7 +22,7 @@ export default function FilePalette({ paths: allPaths, excluded, open, onClose, 
 
   if (!open) return null
 
-  const paths = allPaths.filter((p) => !excluded.has(p))
+  const paths = allPaths.filter(p => !excluded.has(p))
 
   function handleSelect(path: string) {
     onSelect(path)
@@ -40,7 +40,7 @@ export default function FilePalette({ paths: allPaths, excluded, open, onClose, 
       {/* biome-ignore lint/a11y/noStaticElementInteractions: stop propagation */}
       <div
         className="w-140 max-h-100 bg-dialog border border-strong rounded-[10px] shadow-[0_16px_48px_var(--iw-shadow-dialog)] overflow-hidden flex flex-col font-sans"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <Command label="File search">
           <Command.Input
@@ -49,13 +49,13 @@ export default function FilePalette({ paths: allPaths, excluded, open, onClose, 
             className="w-full px-4 py-3.5 text-[13px] font-mono border-0 border-b border-border bg-transparent text-text outline-none box-border caret-accent"
             value={query}
             onValueChange={setQuery}
-            onKeyDown={(e) => e.key === 'Escape' && onClose()}
+            onKeyDown={e => e.key === 'Escape' && onClose()}
           />
           <Command.List ref={listRef} className="overflow-y-auto max-h-80">
             <Command.Empty className="px-4 py-3 font-mono text-[12px] text-faint">
               no files found
             </Command.Empty>
-            {paths.map((p) => {
+            {paths.map(p => {
               const name = p.split('/').pop() ?? p
               return (
                 <Command.Item

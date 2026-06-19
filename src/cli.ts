@@ -12,8 +12,8 @@ function findProjectRoot(from: string): string {
   while (true) {
     const entries = fs.readdirSync(current)
     if (
-      PROJECT_MARKERS.some((marker) =>
-        typeof marker === 'string' ? entries.includes(marker) : entries.some((e) => marker.test(e)),
+      PROJECT_MARKERS.some(marker =>
+        typeof marker === 'string' ? entries.includes(marker) : entries.some(e => marker.test(e)),
       )
     ) {
       return current
@@ -54,15 +54,15 @@ async function main() {
   const graph = await buildGraph(root, tsconfig)
 
   const scope = scopeArgs
-    .map((arg) => path.relative(root, path.resolve(root, arg)))
-    .map((p) => p.replaceAll('\\', '/'))
-    .filter((p) => !p.startsWith('../') && p.length > 0)
+    .map(arg => path.relative(root, path.resolve(root, arg)))
+    .map(p => p.replaceAll('\\', '/'))
+    .filter(p => !p.startsWith('../') && p.length > 0)
 
   // File args auto-open as cards; folder args only scope the tree/palette.
-  const validSeeds = scope.filter((p) => graph.nodes[p])
+  const validSeeds = scope.filter(p => graph.nodes[p])
   const allPaths = Object.keys(graph.nodes)
-  const inScope = (p: string) => graph.nodes[p] || allPaths.some((n) => n.startsWith(`${p}/`))
-  for (const p of scope.filter((p) => !inScope(p))) {
+  const inScope = (p: string) => graph.nodes[p] || allPaths.some(n => n.startsWith(`${p}/`))
+  for (const p of scope.filter(p => !inScope(p))) {
     console.warn(`Warning: argument not found in graph: ${p}`)
   }
 
@@ -95,7 +95,7 @@ async function main() {
   process.on('SIGTERM', shutdown)
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error(err)
   process.exit(1)
 })

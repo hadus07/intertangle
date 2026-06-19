@@ -20,7 +20,7 @@ import FileTree from './FileTree'
 import GradientEdge from './GradientEdge'
 import SourcePanel from './SourcePanel'
 
-const graphPromise: Promise<Graph> = fetch('/graph').then((r) => r.json())
+const graphPromise: Promise<Graph> = fetch('/graph').then(r => r.json())
 const nodeTypes = { fileCard: FileCardNode }
 const edgeTypes = { gradient: GradientEdge }
 
@@ -32,7 +32,7 @@ function parseScopeParam(): string[] {
 const SCOPE = parseScopeParam()
 
 function inScope(p: string) {
-  return SCOPE.length === 0 || SCOPE.some((s) => p === s || p.startsWith(`${s}/`))
+  return SCOPE.length === 0 || SCOPE.some(s => p === s || p.startsWith(`${s}/`))
 }
 
 export default function App() {
@@ -54,9 +54,9 @@ export default function App() {
   const { chips, addChip, removeChip } = useHidden(graph.root)
   const { theme, toggle: toggleTheme } = useTheme()
   const scopedPaths = Object.keys(graph.nodes).filter(inScope)
-  const visiblePaths = chips.length ? scopedPaths.filter((p) => !matchAny(chips, p)) : scopedPaths
+  const visiblePaths = chips.length ? scopedPaths.filter(p => !matchAny(chips, p)) : scopedPaths
   const hidden = chips.length
-    ? new Set(scopedPaths.filter((p) => matchAny(chips, p)))
+    ? new Set(scopedPaths.filter(p => matchAny(chips, p)))
     : new Set<string>()
   const canvasExcluded = hidden.size ? new Set([...excluded, ...hidden]) : excluded
   const { nodes, edges, onNodesChange, onEdgesChange, focusOn } = useCanvasLayout(
@@ -90,13 +90,13 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  const selectedNodes = nodes.filter((n) => n.selected)
+  const selectedNodes = nodes.filter(n => n.selected)
   const selectedPath = selectedNodes.length === 1 ? selectedNodes[0].id : null
-  const selectedIds = new Set(selectedNodes.map((n) => n.id))
+  const selectedIds = new Set(selectedNodes.map(n => n.id))
   const edgesToRender =
     selectedIds.size === 0
       ? edges
-      : edges.map((e) =>
+      : edges.map(e =>
           selectedIds.has(e.source) || selectedIds.has(e.target)
             ? { ...e, data: { ...e.data, active: true } }
             : e,

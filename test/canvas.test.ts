@@ -50,13 +50,13 @@ describe('projectGraph', () => {
   it('returns nodes and edges for the visible set only', () => {
     const { nodes, edges } = projectGraph(graph, new Set(['a.ts', 'b.ts']))
 
-    expect(nodes.map((n) => n.id).sort()).toEqual(['a.ts', 'b.ts'])
+    expect(nodes.map(n => n.id).sort()).toEqual(['a.ts', 'b.ts'])
     expect(edges).toEqual([{ id: 'a.ts->b.ts', source: 'a.ts', target: 'b.ts', type: 'gradient' }])
   })
 
   it('includes import and imported-by counts in node data', () => {
     const { nodes } = projectGraph(graph, new Set(['a.ts', 'b.ts', 'c.ts']))
-    const byId = Object.fromEntries(nodes.map((n) => [n.id, n.data]))
+    const byId = Object.fromEntries(nodes.map(n => [n.id, n.data]))
 
     expect(byId['a.ts']).toMatchObject({ importCount: 1, importedByCount: 0 })
     expect(byId['b.ts']).toMatchObject({ importCount: 1, importedByCount: 1 })
@@ -65,7 +65,7 @@ describe('projectGraph', () => {
 
   it('passes external labels through to node data', () => {
     const { nodes } = projectGraph(graph, new Set(['a.ts', 'b.ts', 'c.ts']))
-    const byId = Object.fromEntries(nodes.map((n) => [n.id, n.data]))
+    const byId = Object.fromEntries(nodes.map(n => [n.id, n.data]))
 
     expect(byId['a.ts'].externals).toEqual([{ name: 'react', type: 'npm' }])
     expect(byId['b.ts'].externals).toEqual([])
@@ -78,14 +78,14 @@ describe('projectGraph', () => {
       new Set(['b.ts']),
     )
 
-    expect(nodes.map((n) => n.id).sort()).toEqual(['a.ts', 'c.ts'])
+    expect(nodes.map(n => n.id).sort()).toEqual(['a.ts', 'c.ts'])
     // a->b and b->c both touch the excluded b.ts, so no edges remain.
     expect(edges).toEqual([])
   })
 
   it('discounts excluded neighbours from the chip counts', () => {
     const { nodes } = projectGraph(graph, new Set(['a.ts', 'b.ts', 'c.ts']), new Set(['b.ts']))
-    const byId = Object.fromEntries(nodes.map((n) => [n.id, n.data]))
+    const byId = Object.fromEntries(nodes.map(n => [n.id, n.data]))
 
     // a.ts's only import (b.ts) is excluded, and c.ts's only importer (b.ts) too.
     expect(byId['a.ts']).toMatchObject({ importCount: 0 })
@@ -95,7 +95,7 @@ describe('projectGraph', () => {
   it('projects import cycles without dropping edges', () => {
     const { nodes, edges } = projectGraph(cycleGraph, new Set(Object.keys(cycleGraph.nodes)))
     expect(nodes).toHaveLength(3)
-    expect(edges.map((e) => e.id).sort()).toEqual([
+    expect(edges.map(e => e.id).sort()).toEqual([
       'src/a.ts->src/b.ts',
       'src/b.ts->src/c.ts',
       'src/c.ts->src/a.ts',
@@ -109,7 +109,7 @@ describe('layout', () => {
     return layout(nodes, edges)
   }
   const pos = (ns: Awaited<ReturnType<typeof layout>>) =>
-    ns.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }))
+    ns.map(n => ({ id: n.id, x: n.position.x, y: n.position.y }))
 
   it('produces deterministic positions for the same visible set', async () => {
     const visible = new Set(['a.ts', 'b.ts', 'c.ts'])

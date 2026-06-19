@@ -6,13 +6,13 @@ describe('buildTree', () => {
     const tree = buildTree(['src/a.ts', 'src/sub/b.ts', 'index.ts'])
 
     // folders before files, each alpha
-    expect(tree.map((n) => [n.name, n.isFile])).toEqual([
+    expect(tree.map(n => [n.name, n.isFile])).toEqual([
       ['src', false],
       ['index.ts', true],
     ])
     const src = tree[0]
     expect(src.path).toBe('src')
-    expect(src.children.map((n) => [n.name, n.isFile, n.path])).toEqual([
+    expect(src.children.map(n => [n.name, n.isFile, n.path])).toEqual([
       ['sub', false, 'src/sub'],
       ['a.ts', true, 'src/a.ts'],
     ])
@@ -25,7 +25,7 @@ describe('buildTree', () => {
     const tree = buildTree(['src/shared/graph.ts', 'src/shared/canvas.ts'])
     expect(tree.length).toBe(1)
     expect([tree[0].name, tree[0].path]).toEqual(['src/shared', 'src/shared'])
-    expect(tree[0].children.map((n) => n.name)).toEqual(['canvas.ts', 'graph.ts'])
+    expect(tree[0].children.map(n => n.name)).toEqual(['canvas.ts', 'graph.ts'])
   })
 
   it('lists every file under a folder, recursively', () => {

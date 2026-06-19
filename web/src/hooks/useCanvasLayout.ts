@@ -53,7 +53,7 @@ export function useCanvasLayout(
       onShowSource,
       onRemove,
     }
-    setNodes((prev) => reconcileCanvasNodes(prev, projected, handlers, anchorPath))
+    setNodes(prev => reconcileCanvasNodes(prev, projected, handlers, anchorPath))
     setEdges(projectedEdges)
   }, [graph, expanded, excluded, onExpand, onShowSource, onRemove, setNodes, setEdges])
 
@@ -69,34 +69,40 @@ export function useCanvasLayout(
       .join('|')
     if (sig === lastLayoutSig.current) return
     lastLayoutSig.current = sig
+
+    // Returns true if it handled the pan so applyLayout can skip fitView.
+    function panToNewCard(focusPath: string, pos: Map<string, { x: number; y: number }>) {
+      focusAfterLayoutRef.current = false
+      focusRef.current = null
+      const focusPos = pos.get(focusPath)
+      const focusNode = nodes.find(n => n.id === focusPath)
+      if (focusPos && focusNode?.measured?.width) {
+        const w = focusNode.measured.width
+        const h = focusNode.measured.height ?? CARD_HEIGHT
+        setCenter(focusPos.x + w / 2, focusPos.y + h / 2, { duration: 400 })
+        return true
+      }
+      return false
+    }
+
+    function applyLayout(laid: Node<FileCardData>[]) {
+      const pos = new Map(laid.map(n => [n.id, n.position]))
+      const focusPath = focusRef.current
+      const isFocusAfterLayout = focusAfterLayoutRef.current
+      setNodes(prev =>
+        prev.map(n => ({
+          ...n,
+          position: pos.get(n.id) ?? n.position,
+          ...(isFocusAfterLayout && focusPath && { selected: n.id === focusPath }),
+        })),
+      )
+      if (isFocusAfterLayout && focusPath && panToNewCard(focusPath, pos)) return
+      fitView({ padding: 0.2, duration: 300 })
+    }
+
     layout(nodes, edges, sizes)
-      .then((laid) => {
-        const pos = new Map(laid.map((n) => [n.id, n.position]))
-        const focusPath = focusRef.current
-        const isFocusAfterLayout = focusAfterLayoutRef.current
-        setNodes((prev) =>
-          prev.map((n) => ({
-            ...n,
-            position: pos.get(n.id) ?? n.position,
-            ...(isFocusAfterLayout && focusPath && { selected: n.id === focusPath }),
-          })),
-        )
-        // If we're focusing a newly-added card, pan to it instead of fitView.
-        if (isFocusAfterLayout && focusPath) {
-          focusAfterLayoutRef.current = false
-          focusRef.current = null
-          const focusPos = pos.get(focusPath)
-          const focusNode = nodes.find((n) => n.id === focusPath)
-          if (focusPos && focusNode?.measured?.width) {
-            const w = focusNode.measured.width
-            const h = focusNode.measured.height ?? CARD_HEIGHT
-            setCenter(focusPos.x + w / 2, focusPos.y + h / 2, { duration: 400 })
-            return
-          }
-        }
-        fitView({ padding: 0.2, duration: 300 })
-      })
-      .catch((err) => console.error('layout failed', err))
+      .then(applyLayout)
+      .catch(err => console.error('layout failed', err))
   }, [nodes, edges, graph, setNodes, fitView, setCenter])
 
   // Handles focus for cards already on canvas (layout is a no-op for them).
@@ -104,10 +110,10 @@ export function useCanvasLayout(
     if (focusAfterLayoutRef.current) return // new card: Pass 2 will handle it
     const path = focusRef.current
     if (!path) return
-    const node = nodes.find((n) => n.id === path)
+    const node = nodes.find(n => n.id === path)
     if (!node?.measured?.width) return
     focusRef.current = null
-    setNodes((prev) => prev.map((n) => ({ ...n, selected: n.id === path })))
+    setNodes(prev => prev.map(n => ({ ...n, selected: n.id === path })))
     const w = node.measured.width
     const h = node.measured.height ?? CARD_HEIGHT
     setCenter(node.position.x + w / 2, node.position.y + h / 2, { duration: 400 })
@@ -117,7 +123,7 @@ export function useCanvasLayout(
   // complete first so the focus effect doesn't fire early with position {0,0}.
   function focusOn(path: string) {
     focusRef.current = path
-    focusAfterLayoutRef.current = !nodes.some((n) => n.id === path)
+    focusAfterLayoutRef.current = !nodes.some(n => n.id === path)
     seed(path)
   }
 

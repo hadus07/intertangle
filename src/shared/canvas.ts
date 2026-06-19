@@ -20,6 +20,26 @@ export interface FileCardData extends GraphNode, CardHandlers, Record<string, un
   importedByExpandable: boolean
 }
 
+function buildNodeData(
+  graph: Graph,
+  id: string,
+  visible: Set<string>,
+  excluded: Set<string> | undefined,
+): FileCardData {
+  const node = graph.nodes[id] as GraphNode
+  const fwd = graph.forward[id] ?? []
+  const rev = graph.reverse[id] ?? []
+  const notExcluded = (p: string) => !excluded?.has(p)
+  return {
+    ...node,
+    importCount: fwd.filter(notExcluded).length,
+    importedByCount: rev.filter(notExcluded).length,
+    externals: graph.external[id] ?? [],
+    importsExpandable: fwd.some(p => notExcluded(p) && !visible.has(p)),
+    importedByExpandable: rev.some(p => notExcluded(p) && !visible.has(p)),
+  }
+}
+
 function buildNodes(
   graph: Graph,
   visible: Set<string>,
@@ -28,20 +48,12 @@ function buildNodes(
   const nodes: Node<FileCardData>[] = []
   for (const id of [...visible].sort()) {
     if (excluded?.has(id)) continue
-    const node = graph.nodes[id]
-    if (!node) continue
+    if (!graph.nodes[id]) continue
     nodes.push({
       id,
       type: 'fileCard',
       position: { x: 0, y: 0 },
-      data: {
-        ...node,
-        importCount: (graph.forward[id] ?? []).filter((p) => !excluded?.has(p)).length,
-        importedByCount: (graph.reverse[id] ?? []).filter((p) => !excluded?.has(p)).length,
-        externals: graph.external[id] ?? [],
-        importsExpandable: (graph.forward[id] ?? []).some((p) => !excluded?.has(p) && !visible.has(p)),
-        importedByExpandable: (graph.reverse[id] ?? []).some((p) => !excluded?.has(p) && !visible.has(p)),
-      },
+      data: buildNodeData(graph, id, visible, excluded),
       measured: { width: CARD_WIDTH, height: CARD_HEIGHT },
     })
   }
@@ -112,7 +124,7 @@ export async function layout(
       // vertical order so the hierarchy doesn't jump around on each expansion.
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     },
-    children: nodes.map((n) => {
+    children: nodes.map(n => {
       const s = sizes?.get(n.id)
       return {
         id: n.id,
@@ -120,7 +132,7 @@ export async function layout(
         height: s?.height ?? n.measured?.height ?? CARD_HEIGHT,
       }
     }),
-    edges: edges.map((e) => ({
+    edges: edges.map(e => ({
       id: e.id,
       sources: [e.source],
       targets: [e.target],
@@ -128,6 +140,6 @@ export async function layout(
   }
 
   const result = await elk.layout(elkGraph)
-  const posById = new Map((result.children ?? []).map((c) => [c.id, { x: c.x ?? 0, y: c.y ?? 0 }]))
-  return nodes.map((n) => ({ ...n, position: posById.get(n.id) ?? n.position }))
+  const posById = new Map((result.children ?? []).map(c => [c.id, { x: c.x ?? 0, y: c.y ?? 0 }]))
+  return nodes.map(n => ({ ...n, position: posById.get(n.id) ?? n.position }))
 }

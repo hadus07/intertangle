@@ -203,7 +203,7 @@ function isProjectFile(raw: string, root: string): boolean {
 }
 
 function isLocal(types: string[], resolved: string, root: string): boolean {
-  if (types.some((t) => LOCAL_TYPES.has(t))) return true
+  if (types.some(t => LOCAL_TYPES.has(t))) return true
   if (types.length > 0) return false
   if (!resolved) return false
   const absolute = path.isAbsolute(resolved) ? resolved : path.resolve(root, resolved)
@@ -213,7 +213,7 @@ function isLocal(types: string[], resolved: string, root: string): boolean {
 
 function classifyExternal(types: string[]): ExternalLabelType {
   if (types.includes('core')) return 'core'
-  if (types.some((t) => t.startsWith('npm'))) return 'npm'
+  if (types.some(t => t.startsWith('npm'))) return 'npm'
   return 'unresolved'
 }
 

@@ -15,7 +15,7 @@ export function buildTree(paths: string[]): TreeNode[] {
       const name = segments[i]
       const isFile = i === segments.length - 1
       const childPath = segments.slice(0, i + 1).join('/')
-      let child = node.children.find((c) => c.name === name && c.isFile === isFile)
+      let child = node.children.find(c => c.name === name && c.isFile === isFile)
       if (!child) {
         child = { name, path: childPath, isFile, children: [] }
         node.children.push(child)

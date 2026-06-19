@@ -32,9 +32,7 @@ describe('mergeNodes', () => {
   it('uses fresh position for nodes absent from the previous render', () => {
     const prev = [node('a.ts', 100)]
     const next = [node('a.ts', 0), node('b.ts', 50)]
-    const byId = Object.fromEntries(
-      reconcileCanvasNodes(prev, next, handlers).map((n) => [n.id, n]),
-    )
+    const byId = Object.fromEntries(reconcileCanvasNodes(prev, next, handlers).map(n => [n.id, n]))
 
     expect(byId['a.ts'].position.x).toBe(100) // preserved
     expect(byId['b.ts'].position.x).toBe(50) // new node, fresh layout
@@ -44,7 +42,7 @@ describe('mergeNodes', () => {
     const prev = [node('a.ts', 100)] // anchor card sits at x:100
     const next = [node('a.ts', 0), node('b.ts', 0), node('c.ts', 0)] // b,c freshly at origin
     const byId = Object.fromEntries(
-      reconcileCanvasNodes(prev, next, handlers, 'a.ts').map((n) => [n.id, n]),
+      reconcileCanvasNodes(prev, next, handlers, 'a.ts').map(n => [n.id, n]),
     )
 
     expect(byId['a.ts'].position.x).toBe(100) // survivor preserved

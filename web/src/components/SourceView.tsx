@@ -6,7 +6,7 @@ const fileCache = new Map<string, Promise<string>>()
 function getFile(path: string): Promise<string> {
   let p = fileCache.get(path)
   if (!p) {
-    p = fetch(`/file?path=${encodeURIComponent(path)}`).then((r) => {
+    p = fetch(`/file?path=${encodeURIComponent(path)}`).then(r => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       return r.text()
     })

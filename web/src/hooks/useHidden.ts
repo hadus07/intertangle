@@ -15,7 +15,7 @@ export function useHidden(root: string) {
   }
 
   function removeChip(pattern: string) {
-    const next = chips.filter((p) => p !== pattern)
+    const next = chips.filter(p => p !== pattern)
     setChips(next)
     localStorage.setItem(hiddenKey(root), JSON.stringify(next))
   }

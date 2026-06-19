@@ -38,7 +38,7 @@ describe('buildGraph', () => {
       ]),
     )
     expect(graph.external['src/utils.ts']).toContainEqual({ name: 'lodash', type: 'unresolved' })
-    expect(Object.keys(graph.nodes).some((p) => p.includes('node_modules'))).toBe(false)
+    expect(Object.keys(graph.nodes).some(p => p.includes('node_modules'))).toBe(false)
     expect(Object.keys(graph.nodes)).not.toContain('fs')
     expect(Object.keys(graph.nodes)).not.toContain('lodash')
   })

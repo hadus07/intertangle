@@ -33,7 +33,7 @@ export default function SourcePanel({ path, onClose }: { path: string; onClose()
   // ponytail: server opens the file in the OS default app for its type; swap for
   // an explicit editor command / $EDITOR if "default app" isn't the editor.
   const openInEditor = () => {
-    fetch(`/open?path=${encodeURIComponent(path)}`).catch((err) =>
+    fetch(`/open?path=${encodeURIComponent(path)}`).catch(err =>
       console.error('failed to open in editor', err),
     )
   }

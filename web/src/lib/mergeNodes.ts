@@ -17,10 +17,10 @@ export function reconcileCanvasNodes(
   handlers: CardHandlers,
   anchorPath?: string | null,
 ): Node<FileCardData>[] {
-  const prevById = new Map(prev.map((n) => [n.id, n]))
+  const prevById = new Map(prev.map(n => [n.id, n]))
   const anchor = anchorPath ? prevById.get(anchorPath)?.position : undefined
   let newCardCount = 0
-  return next.map((n) => {
+  return next.map(n => {
     const old = prevById.get(n.id)
     let position: XYPosition
     if (old) position = old.position
