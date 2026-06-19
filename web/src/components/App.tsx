@@ -12,6 +12,8 @@ import type { Graph } from '~shared/graph'
 const graphPromise: Promise<Graph> = fetch('/graph').then((r) => r.json())
 import { useCanvasLayout } from '../hooks/useCanvasLayout'
 import { useGraphView } from '../hooks/useGraphView'
+import { useHidden } from '../hooks/useHidden'
+import { matchAny } from '../lib/glob'
 import FileCardNode from './FileCardNode'
 import FilePalette from './FilePalette'
 import FileTree from './FileTree'
@@ -91,7 +93,9 @@ export default function App() {
             : e,
         )
 
+  const { chips, addChip, removeChip } = useHidden(graph.root)
   const scopedPaths = Object.keys(graph.nodes).filter(inScope)
+  const visiblePaths = chips.length ? scopedPaths.filter((p) => !matchAny(chips, p)) : scopedPaths
 
   return (
     <PanelGroup direction="horizontal" autoSaveId="intertangle:layout" style={{ height: '100vh' }}>
@@ -105,11 +109,14 @@ export default function App() {
       >
         <div className="h-full overflow-auto">
           <FileTree
-            paths={scopedPaths}
+            paths={visiblePaths}
             excluded={excluded}
             activePath={selectedPath}
             onSetExcluded={setExclusion}
             onSeed={focusOn}
+            chips={chips}
+            onAddChip={addChip}
+            onRemoveChip={removeChip}
           />
         </div>
       </Panel>
@@ -174,7 +181,7 @@ export default function App() {
         </>
       )}
       <FilePalette
-        paths={scopedPaths}
+        paths={visiblePaths}
         excluded={excluded}
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}

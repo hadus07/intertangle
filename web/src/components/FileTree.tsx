@@ -1,7 +1,82 @@
-import { ChevronsDownUp, ChevronsUpDown, File, Folder } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { ChevronsDownUp, ChevronsUpDown, File, Folder, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '../lib/cn'
+import { globToRegExp } from '../lib/glob'
 import { type TreeNode, buildTree, descendantFiles } from '../lib/treeBuilder'
+
+function ChipInput({
+  chips,
+  onAddChip,
+  onRemoveChip,
+}: { chips: string[]; onAddChip: (p: string) => void; onRemoveChip: (p: string) => void }) {
+  const [value, setValue] = useState('')
+  const [invalid, setInvalid] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(null)
+
+  function flashInvalid() {
+    setInvalid(true)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => setInvalid(false), 600)
+  }
+
+  function commit() {
+    const val = value.trim()
+    if (!val) return
+    if (chips.includes(val)) {
+      setValue('')
+      return
+    }
+    try {
+      globToRegExp(val)
+    } catch {
+      flashInvalid()
+      return
+    }
+    onAddChip(val)
+    setValue('')
+  }
+
+  return (
+    <>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commit()
+          }
+        }}
+        placeholder="hide glob… (Enter)"
+        className={cn(
+          'w-full px-2 py-1 text-[11px] font-mono rounded border bg-transparent text-secondary outline-none caret-accent placeholder:text-faint transition-colors duration-120 focus:border-accent',
+          invalid ? 'border-danger' : 'border-strong',
+        )}
+      />
+      {chips.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {chips.map((chip) => (
+            <span
+              key={chip}
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono bg-elevated border border-strong text-secondary"
+            >
+              {chip}
+              <button
+                type="button"
+                onClick={() => onRemoveChip(chip)}
+                className="inline-flex items-center justify-center w-3 h-3 text-muted hover:text-danger cursor-pointer"
+                aria-label={`Remove ${chip}`}
+              >
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
 
 interface Props {
   paths: string[]
@@ -9,6 +84,9 @@ interface Props {
   activePath?: string | null
   onSetExcluded: (files: string[], exclude: boolean) => void
   onSeed: (path: string) => void
+  chips: string[]
+  onAddChip: (pattern: string) => void
+  onRemoveChip: (pattern: string) => void
 }
 
 function folderPaths(nodes: TreeNode[]): string[] {
@@ -25,7 +103,16 @@ function fullyExcludedFolders(nodes: TreeNode[], excluded: Set<string>): string[
   )
 }
 
-export default function FileTree({ paths, excluded, activePath, onSetExcluded, onSeed }: Props) {
+export default function FileTree({
+  paths,
+  excluded,
+  activePath,
+  onSetExcluded,
+  onSeed,
+  chips,
+  onAddChip,
+  onRemoveChip,
+}: Props) {
   const tree = buildTree(paths)
   // ponytail: seed once from the restored exclusions; user toggles take over after.
   const [collapsed, setCollapsed] = useState<Set<string>>(
@@ -57,13 +144,16 @@ export default function FileTree({ paths, excluded, activePath, onSetExcluded, o
 
   return (
     <div className="px-1 pb-2">
-      <div className="sticky top-0 z-1 flex justify-end px-2 pt-3 pb-1.5 mb-1 border-b border-border bg-sidebar gap-1">
-        <button type="button" className={iconBtnClass} title="Expand all" onClick={expandAll}>
-          <ChevronsUpDown size={15} />
-        </button>
-        <button type="button" className={iconBtnClass} title="Collapse all" onClick={collapseAll}>
-          <ChevronsDownUp size={15} />
-        </button>
+      <div className="sticky top-0 z-1 px-2 pt-3 pb-1.5 mb-1 border-b border-border bg-sidebar">
+        <div className="flex justify-end gap-1 mb-1.5">
+          <button type="button" className={iconBtnClass} title="Expand all" onClick={expandAll}>
+            <ChevronsUpDown size={15} />
+          </button>
+          <button type="button" className={iconBtnClass} title="Collapse all" onClick={collapseAll}>
+            <ChevronsDownUp size={15} />
+          </button>
+        </div>
+        <ChipInput chips={chips} onAddChip={onAddChip} onRemoveChip={onRemoveChip} />
       </div>
       {tree.map((node) => (
         <Row
@@ -162,7 +252,7 @@ function Row({
   depth: number
   collapsed: Set<string>
   onToggle: (path: string, open: boolean) => void
-} & Omit<Props, 'paths'>) {
+} & Omit<Props, 'paths' | 'chips' | 'onAddChip' | 'onRemoveChip'>) {
   if (node.isFile) {
     return (
       <FileRow
