@@ -2,6 +2,15 @@
 <html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Set the theme before first paint so light-mode users never see a dark flash.
+      (function () {
+        var t = localStorage.getItem('intertangle:theme')
+        if (t !== 'light' && t !== 'dark')
+          t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        document.documentElement.dataset.theme = t
+      })()
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>intertangle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

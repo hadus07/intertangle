@@ -1,5 +1,5 @@
 import { Background, BackgroundVariant, Controls, ReactFlow } from '@xyflow/react'
-import { PanelLeft, Search, Trash2 } from 'lucide-react'
+import { Moon, PanelLeft, Search, Sun, Trash2 } from 'lucide-react'
 import { use, useEffect, useRef, useState } from 'react'
 import {
   type ImperativePanelHandle,
@@ -13,6 +13,7 @@ const graphPromise: Promise<Graph> = fetch('/graph').then((r) => r.json())
 import { useCanvasLayout } from '../hooks/useCanvasLayout'
 import { useGraphView } from '../hooks/useGraphView'
 import { useHidden } from '../hooks/useHidden'
+import { useTheme } from '../hooks/useTheme'
 import { matchAny } from '../lib/glob'
 import FileCardNode from './FileCardNode'
 import FilePalette from './FilePalette'
@@ -51,6 +52,7 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const panelRef = useRef<ImperativePanelHandle>(null)
   const { chips, addChip, removeChip } = useHidden(graph.root)
+  const { theme, toggle: toggleTheme } = useTheme()
   const scopedPaths = Object.keys(graph.nodes).filter(inScope)
   const visiblePaths = chips.length ? scopedPaths.filter((p) => !matchAny(chips, p)) : scopedPaths
   const hidden = chips.length
@@ -149,6 +151,14 @@ export default function App() {
             onClick={clear}
           >
             <Trash2 size={15} />
+          </button>
+          <button
+            type="button"
+            className="absolute top-3 left-29 z-5 inline-flex items-center justify-center w-7 h-7 p-0 border border-strong rounded-md bg-elevated text-muted cursor-pointer transition-colors duration-120 hover:text-accent-hover hover:border-accent"
+            title="Toggle theme"
+            onClick={toggleTheme}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
           {scopedPaths.length === 0 && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none z-5 p-6 font-mono text-[13px] text-muted text-center">

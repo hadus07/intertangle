@@ -33,13 +33,14 @@ const EXT_TO_LANG: Record<string, string> = {
   '.cjs': 'javascript',
 }
 
-// One source of truth for the code-view theme. A light UI theme would add a
-// light Shiki theme here and pick per request.
-const SHIKI_THEME = 'github-dark'
+// Both themes are baked into every response as CSS variables (--shiki-light /
+// --shiki-dark). styles.css picks which set is active off [data-theme], so a UI
+// theme flip is instant and the per-path HTML cache stays valid — no refetch.
+const SHIKI_THEMES = { light: 'github-light', dark: 'github-dark' } as const
 
 const highlighterPromise = getSingletonHighlighter({
   langs: ['typescript', 'javascript', 'tsx', 'jsx'],
-  themes: [SHIKI_THEME],
+  themes: [SHIKI_THEMES.light, SHIKI_THEMES.dark],
 })
 
 // Read a project file live and return server-side Shiki-highlighted HTML.
@@ -48,7 +49,7 @@ export async function highlightFile(absPath: string): Promise<string> {
   const source = await fs.readFile(absPath, 'utf8')
   const lang = EXT_TO_LANG[path.extname(absPath).toLowerCase()] ?? 'typescript'
   const highlighter = await highlighterPromise
-  return highlighter.codeToHtml(source, { lang, theme: SHIKI_THEME })
+  return highlighter.codeToHtml(source, { lang, themes: SHIKI_THEMES, defaultColor: false })
 }
 
 const defaultAssetsUrl = new URL('./web/', import.meta.url)

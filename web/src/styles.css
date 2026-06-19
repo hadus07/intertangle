@@ -128,6 +128,71 @@
   --iw-shadow-dialog: rgba(0, 0, 0, 0.6);
 }
 
+[data-theme="light"] {
+  /* Surfaces */
+  --iw-bg-canvas: #f7f8fb;
+  --iw-bg-sidebar: #eef0f5;
+  --iw-bg-source: #ffffff;
+  --iw-bg-elevated: #ffffff;
+  --iw-bg-elevated-hover: #eceef5;
+  --iw-bg-dialog: #ffffff;
+  --iw-bg-selected: #e7e9f8;
+
+  /* Borders */
+  --iw-border: #e1e3ed;
+  --iw-border-strong: #cccedd;
+
+  /* Text */
+  --iw-text: #1a1c28;
+  --iw-text-secondary: #474c63;
+  --iw-text-muted: #696e8c;
+  --iw-text-faint: #b6bacd;
+
+  /* Accent (indigo, deepened to read on light surfaces) */
+  --iw-accent: #5a4ad6;
+  --iw-accent-hover: #4738bd;
+  --iw-accent-active: #362a99;
+  --iw-accent-dim: #7d75c4;
+  --iw-accent-wash: color-mix(in srgb, var(--iw-accent) 11%, transparent);
+  --iw-accent-wash-soft: color-mix(in srgb, var(--iw-accent) 8%, transparent);
+  --iw-accent-wash-faint: color-mix(in srgb, var(--iw-accent) 5%, transparent);
+  --iw-accent-glow: color-mix(in srgb, var(--iw-accent) 35%, transparent);
+
+  /* Info (blue) */
+  --iw-info: #2563eb;
+  --iw-info-hover: #1d4fd0;
+  --iw-info-dim: #5a7fc0;
+  --iw-info-wash: color-mix(in srgb, var(--iw-info) 9%, transparent);
+
+  /* Danger */
+  --iw-danger: #dc2626;
+  --iw-danger-text: #b91c1c;
+  --iw-danger-wash: color-mix(in srgb, var(--iw-danger) 9%, transparent);
+
+  /* Chips */
+  --iw-chip-imports-border: #c8c1ef;
+  --iw-chip-importedby-border: #bcd0f4;
+
+  /* External dep labels */
+  --iw-ext-npm-bg: #e9f5ec;
+  --iw-ext-npm-border: #b7dcc3;
+  --iw-ext-npm-text: #1f7a44;
+  --iw-ext-core-bg: #e8f0fb;
+  --iw-ext-core-border: #bcd2ee;
+  --iw-ext-unresolved-bg: #faf2db;
+  --iw-ext-unresolved-border: #e7d49e;
+  --iw-ext-unresolved-text: #946a12;
+
+  /* Edges */
+  --iw-edge: #9a9eb6;
+  --iw-edge-from: #d97706;
+  --iw-edge-to: #0284c7;
+
+  /* Misc */
+  --iw-overlay-scrim: rgba(20, 22, 35, 0.32);
+  --iw-shadow-dialog: rgba(20, 22, 40, 0.18);
+}
+
 *,
 *::before,
 *::after {
@@ -184,4 +249,16 @@ body {
   font-size: 12px;
   line-height: 1.5;
   background: transparent !important;
+}
+
+/* Shiki ships both palettes as --shiki-light / --shiki-dark vars per token
+   (defaultColor: false). Pick the active set off the theme; bg stays the
+   panel's (pre is forced transparent above). */
+.shiki,
+.shiki span {
+  color: var(--shiki-dark);
+}
+[data-theme="light"] .shiki,
+[data-theme="light"] .shiki span {
+  color: var(--shiki-light);
 }
