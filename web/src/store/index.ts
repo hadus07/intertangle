@@ -2,14 +2,21 @@ import { createContext, useContext } from 'react'
 import { createStore, useStore } from 'zustand'
 import type { ExpandDirection } from '~shared/canvas'
 import type { Graph } from '~shared/graph'
+import { matchAny } from '../lib/glob'
 import { type GraphViewAction, graphView } from '../lib/graphView'
+import { applyTheme, readTheme } from '../lib/theme'
 
 const excludedKey = (root: string) => `intertangle:excluded:${root}`
 const hiddenKey = (root: string) => `intertangle:hidden:${root}`
 
-function readSeeds(): Set<string> {
-  const raw = new URLSearchParams(window.location.search).get('seeds')
-  return raw ? new Set(raw.split(',')) : new Set<string>()
+export function computeCanvasExcluded(
+  excluded: Set<string>,
+  chips: string[],
+  graphNodes: Record<string, unknown>,
+): Set<string> {
+  if (!chips.length) return excluded
+  const hidden = new Set(Object.keys(graphNodes).filter(p => matchAny(chips, p)))
+  return hidden.size ? new Set([...excluded, ...hidden]) : excluded
 }
 
 interface AppState {
@@ -32,19 +39,24 @@ interface AppState {
   setPaletteOpen: (open: boolean) => void
 }
 
-export const createAppStore = (graph: Graph) =>
+export const createAppStore = (graph: Graph, seeds: Set<string>) =>
   createStore<AppState>((set, get) => {
     function dispatch(action: GraphViewAction) {
       const { expanded, excluded, sourcePath } = graphView(graph, get(), action)
       set({ expanded, excluded, sourcePath })
     }
 
+    const initialExcluded = new Set<string>(
+      JSON.parse(localStorage.getItem(excludedKey(graph.root)) ?? '[]'),
+    )
+    const initialChips = JSON.parse(localStorage.getItem(hiddenKey(graph.root)) ?? '[]') as string[]
+
     return {
-      expanded: readSeeds(),
-      excluded: new Set<string>(JSON.parse(localStorage.getItem(excludedKey(graph.root)) ?? '[]')),
+      expanded: seeds,
+      excluded: initialExcluded,
       sourcePath: null,
-      chips: JSON.parse(localStorage.getItem(hiddenKey(graph.root)) ?? '[]') as string[],
-      theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
+      chips: initialChips,
+      theme: readTheme(),
       paletteOpen: false,
 
       expand: (path, direction) => dispatch({ type: 'expand', path, direction }),
@@ -53,13 +65,14 @@ export const createAppStore = (graph: Graph) =>
       hideSource: () => dispatch({ type: 'showSource', path: null }),
       remove: path => dispatch({ type: 'remove', path }),
       setExclusion: (files, exclude) => {
-        const next = new Set(get().excluded)
+        const { excluded: cur } = get()
+        const next = new Set(cur)
         for (const f of files) {
           if (exclude) next.add(f)
           else next.delete(f)
         }
         localStorage.setItem(excludedKey(graph.root), JSON.stringify([...next]))
-        dispatch({ type: 'setExcluded', excluded: next })
+        set({ excluded: next })
       },
       clear: () => dispatch({ type: 'clear' }),
       addChip: pattern => {
@@ -76,8 +89,7 @@ export const createAppStore = (graph: Graph) =>
       },
       toggleTheme: () => {
         const next: 'light' | 'dark' = get().theme === 'dark' ? 'light' : 'dark'
-        document.documentElement.dataset.theme = next
-        localStorage.setItem('intertangle:theme', next)
+        applyTheme(next)
         set({ theme: next })
       },
       setPaletteOpen: open => set({ paletteOpen: open }),

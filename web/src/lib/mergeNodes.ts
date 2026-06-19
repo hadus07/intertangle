@@ -1,8 +1,6 @@
 import type { Node, XYPosition } from '@xyflow/react'
 import type { CardHandlers, FileCardData } from '~shared/canvas'
 
-export type { CardHandlers }
-
 const STACK_OFFSET = 24
 
 // Merge freshly-projected nodes over the previous render: keep prior position and

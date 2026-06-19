@@ -1,8 +1,9 @@
 import { type Edge, type Node, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react'
 import { useEffect, useRef } from 'react'
+import type { CardHandlers } from '~shared/canvas'
 import { CARD_HEIGHT, type FileCardData, layout, projectGraph } from '~shared/canvas'
 import type { Graph } from '~shared/graph'
-import { type CardHandlers, reconcileCanvasNodes } from '../lib/mergeNodes'
+import { reconcileCanvasNodes } from '../lib/mergeNodes'
 
 export function useCanvasLayout(
   graph: Graph | null,

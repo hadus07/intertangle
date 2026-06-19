@@ -2,8 +2,7 @@ import { File, Folder } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { descendantFiles, type TreeNode } from '../../lib/treeBuilder'
 import { useAppStore, useAppStoreSnapshot } from '../../store'
-// ponytail: circular dep — safe because useFileTreeCtx is only called at render time, not module init
-import { useFileTreeCtx } from './index'
+import { useFileTreeCtx } from './context'
 
 const ICON_WIDTH = 14
 const ICON_GAP = 6

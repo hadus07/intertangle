@@ -1,24 +1,16 @@
 import { ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
-import { createContext, type RefObject, useContext, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { buildTree, descendantFiles, type TreeNode } from '../../lib/treeBuilder'
 import { useAppStore } from '../../store'
 import { ChipInput } from './ChipInput'
+import { FileTreeCtx } from './context'
 import { Row } from './Row'
-
-interface FileTreeCtx {
-  activePath?: string | null
-  activeRef: RefObject<HTMLDivElement | null>
-  onSeed: (path: string) => void
-}
 
 interface Props {
   paths: string[]
   activePath?: string | null
   onSeed: (path: string) => void
 }
-
-export const FileTreeCtx = createContext<FileTreeCtx>(null as unknown as FileTreeCtx)
-export const useFileTreeCtx = () => useContext(FileTreeCtx)
 
 export function FileTree({ paths, activePath, onSeed }: Props) {
   const excluded = useAppStore(s => s.excluded)

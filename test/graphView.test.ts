@@ -50,19 +50,6 @@ describe('graphView', () => {
     expect([...s.expanded].sort()).toEqual(['a.ts', 'b.ts', 'c.ts'])
   })
 
-  it('setExcluded stores the precomputed set', () => {
-    const added = graphView(graph, blank(), {
-      type: 'setExcluded',
-      excluded: new Set(['a.ts', 'b.ts']),
-    })
-    expect([...added.excluded].sort()).toEqual(['a.ts', 'b.ts'])
-    const removed = graphView(graph, added, {
-      type: 'setExcluded',
-      excluded: new Set(['b.ts']),
-    })
-    expect([...removed.excluded]).toEqual(['b.ts'])
-  })
-
   it('remove drops from expanded and clears sourcePath iff equal', () => {
     const s = graphView(graph, blank({ expanded: new Set(['a.ts', 'b.ts']), sourcePath: 'a.ts' }), {
       type: 'remove',
@@ -104,11 +91,12 @@ describe('graphView', () => {
     expect([...s.excluded]).toEqual(['b.ts'])
   })
 
-  it('invariant: an expand/setExcluded cycle never removes a member from expanded', () => {
+  it('invariant: excluding a file never removes it from expanded', () => {
     let s = blank({ expanded: new Set(['a.ts']) })
     s = graphView(graph, s, { type: 'expand', path: 'a.ts', direction: 'imports' })
-    s = graphView(graph, s, { type: 'setExcluded', excluded: new Set(['b.ts']) })
-    s = graphView(graph, s, { type: 'setExcluded', excluded: new Set() })
+    // Simulate exclusion state changes (store bypasses dispatch for setExclusion)
+    s = { ...s, excluded: new Set(['b.ts']) }
+    s = { ...s, excluded: new Set() }
     expect(s.expanded.has('a.ts')).toBe(true)
     expect(s.expanded.has('b.ts')).toBe(true)
     expect(s.expanded.has('c.ts')).toBe(true)

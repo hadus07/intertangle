@@ -1,8 +1,8 @@
 import { X } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { useAppStore, useAppStoreSnapshot } from 'src/store'
 import { cn } from '../../lib/cn'
 import { globToRegExp } from '../../lib/glob'
+import { useAppStore, useAppStoreSnapshot } from '../../store'
 
 export function ChipInput() {
   const [value, setValue] = useState('')

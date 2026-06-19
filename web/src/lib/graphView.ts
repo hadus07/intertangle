@@ -12,7 +12,6 @@ export type GraphViewAction =
   | { type: 'seed'; path: string }
   | { type: 'showSource'; path: string | null }
   | { type: 'remove'; path: string }
-  | { type: 'setExcluded'; excluded: Set<string> }
   | { type: 'clear' }
 
 function applyExpand(
@@ -49,8 +48,6 @@ export function graphView(
         sourcePath: state.sourcePath === action.path ? null : state.sourcePath,
       }
     }
-    case 'setExcluded':
-      return { ...state, excluded: action.excluded }
     case 'clear':
       return { ...state, expanded: new Set(), sourcePath: null }
   }

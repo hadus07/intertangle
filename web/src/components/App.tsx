@@ -11,7 +11,14 @@ import type { Graph } from '~shared/graph'
 
 import { useCanvasLayout } from '../hooks/useCanvasLayout'
 import { matchAny } from '../lib/glob'
-import { AppStoreContext, createAppStore, useAppStore, useAppStoreSnapshot } from '../store'
+import { parseUrlParams } from '../lib/urlParams'
+import {
+  AppStoreContext,
+  computeCanvasExcluded,
+  createAppStore,
+  useAppStore,
+  useAppStoreSnapshot,
+} from '../store'
 import { FileCardNode } from './FileCardNode'
 import { FilePalette } from './FilePalette'
 import { FileTree } from './FileTree'
@@ -24,29 +31,29 @@ const edgeTypes = { gradient: GradientEdge }
 
 export function App() {
   const graph = use(graphPromise)
+  const { seeds, scope } = parseUrlParams()
   return (
-    <AppStoreContext.Provider value={createAppStore(graph)}>
-      <AppCanvas graph={graph} />
+    <AppStoreContext.Provider value={createAppStore(graph, seeds)}>
+      <AppCanvas graph={graph} scope={scope} />
     </AppStoreContext.Provider>
   )
 }
 
-function AppCanvas({ graph }: { graph: Graph }) {
+function AppCanvas({ graph, scope }: { graph: Graph; scope: string[] }) {
   const expanded = useAppStore(s => s.expanded)
-  const excluded = useAppStore(s => s.excluded)
   const sourcePath = useAppStore(s => s.sourcePath)
   const chips = useAppStore(s => s.chips)
+  const excluded = useAppStore(s => s.excluded)
   const theme = useAppStore(s => s.theme)
+  const canvasExcluded = computeCanvasExcluded(excluded, chips, graph.nodes)
   const { seed, expand, showSource, hideSource, remove, clear, toggleTheme, setPaletteOpen } =
     useAppStoreSnapshot()
 
   const panelRef = useRef<ImperativePanelHandle>(null)
-  const scopedPaths = Object.keys(graph.nodes).filter(inScope)
+  const scopedPaths = Object.keys(graph.nodes).filter(
+    p => scope.length === 0 || scope.some(s => p === s || p.startsWith(`${s}/`)),
+  )
   const visiblePaths = chips.length ? scopedPaths.filter(p => !matchAny(chips, p)) : scopedPaths
-  const hidden = chips.length
-    ? new Set(scopedPaths.filter(p => matchAny(chips, p)))
-    : new Set<string>()
-  const canvasExcluded = hidden.size ? new Set([...excluded, ...hidden]) : excluded
   const { nodes, edges, onNodesChange, onEdgesChange, focusOn } = useCanvasLayout(
     graph,
     expanded,
@@ -175,15 +182,4 @@ function AppCanvas({ graph }: { graph: Graph }) {
       <FilePalette paths={visiblePaths} onSelect={focusOn} />
     </PanelGroup>
   )
-}
-
-const SCOPE = parseScopeParam()
-
-function parseScopeParam(): string[] {
-  const raw = new URLSearchParams(window.location.search).get('scope')
-  return raw ? raw.split(',').filter(Boolean) : []
-}
-
-function inScope(p: string) {
-  return SCOPE.length === 0 || SCOPE.some(s => p === s || p.startsWith(`${s}/`))
 }
