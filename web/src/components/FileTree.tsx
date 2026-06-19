@@ -1,5 +1,5 @@
 import { ChevronsDownUp, ChevronsUpDown, File, Folder, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 import { cn } from '../lib/cn'
 import { globToRegExp } from '../lib/glob'
 import { type TreeNode, buildTree, descendantFiles } from '../lib/treeBuilder'
@@ -118,6 +118,12 @@ export default function FileTree({
   const [collapsed, setCollapsed] = useState<Set<string>>(
     () => new Set(fullyExcludedFolders(tree, excluded)),
   )
+  const activeRef = useRef<HTMLDivElement>(null)
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps are the re-run triggers, not body reads
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'center' })
+  }, [activePath, collapsed])
 
   const collapseAll = () => setCollapsed(new Set(folderPaths(tree)))
   const expandAll = () => setCollapsed(new Set())
@@ -167,6 +173,7 @@ export default function FileTree({
           onToggle={onToggle}
           excluded={excluded}
           activePath={activePath}
+          activeRef={activeRef}
           onSetExcluded={onSetExcluded}
           onSeed={onSeed}
         />
@@ -180,6 +187,7 @@ function FileRow({
   depth,
   excluded,
   activePath,
+  activeRef,
   onSetExcluded,
   onSeed,
 }: {
@@ -187,6 +195,7 @@ function FileRow({
   depth: number
   excluded: Set<string>
   activePath?: string | null
+  activeRef: RefObject<HTMLDivElement | null>
   onSetExcluded: Props['onSetExcluded']
   onSeed: Props['onSeed']
 }) {
@@ -206,9 +215,7 @@ function FileRow({
         isActive && 'bg-accent-wash shadow-[inset_2px_0_0_var(--iw-accent)]',
       )}
       style={indent(depth)}
-      ref={(el) => {
-        isActive && el?.scrollIntoView({ block: 'nearest' })
-      }}
+      ref={isActive ? activeRef : undefined}
     >
       <span className={cn('inline-flex items-center justify-center shrink-0 w-3.5', iconColor)}>
         <File size={13} />
@@ -248,6 +255,7 @@ function Row({
   onToggle,
   excluded,
   activePath,
+  activeRef,
   onSetExcluded,
   onSeed,
 }: {
@@ -255,6 +263,7 @@ function Row({
   depth: number
   collapsed: Set<string>
   onToggle: (path: string, open: boolean) => void
+  activeRef: RefObject<HTMLDivElement | null>
 } & Omit<Props, 'paths' | 'chips' | 'onAddChip' | 'onRemoveChip'>) {
   if (node.isFile) {
     return (
@@ -263,6 +272,7 @@ function Row({
         depth={depth}
         excluded={excluded}
         activePath={activePath}
+        activeRef={activeRef}
         onSetExcluded={onSetExcluded}
         onSeed={onSeed}
       />
@@ -318,6 +328,7 @@ function Row({
           onToggle={onToggle}
           excluded={excluded}
           activePath={activePath}
+          activeRef={activeRef}
           onSetExcluded={onSetExcluded}
           onSeed={onSeed}
         />
