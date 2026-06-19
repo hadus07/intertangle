@@ -45,14 +45,14 @@ server changes.
 
 ## Acceptance criteria
 
-- [ ] Glob matcher seam: slash-free pattern matches basename and any folder segment at any depth; slash pattern anchored at root; `*` does not cross `/` and `**` does; matching is case-sensitive; `matchAny` ORs its patterns; invalid glob is signalled. (test)
-- [ ] Input + wrapping chip row are pinned in the file-tree sticky header and stay visible while the tree scrolls. (manual-verify)
-- [ ] Pressing Enter commits the trimmed input as one chip; `×` removes it. (manual-verify)
-- [ ] Empty/whitespace Enter is a no-op; a duplicate pattern is ignored; an invalid glob is rejected with a transient red border (no chip added). (manual-verify)
-- [ ] A file matching any chip is fully removed from the file tree (not struck-through), and a folder whose every file is hidden disappears. (manual-verify)
-- [ ] A hidden file does not appear in the `Cmd-K` palette. (manual-verify)
-- [ ] Checkbox-`excluded` files still render struck-through in the tree — chips and `excluded` do not interfere with each other. (manual-verify)
-- [ ] Chips survive a reload under the same project root and do not leak into a different project sharing the port. (manual-verify)
+- [x] Glob matcher seam: slash-free pattern matches basename and any folder segment at any depth; slash pattern anchored at root; `*` does not cross `/` and `**` does; matching is case-sensitive; `matchAny` ORs its patterns; invalid glob is signalled. (test)
+- [x] Input + wrapping chip row are pinned in the file-tree sticky header and stay visible while the tree scrolls. (manual-verify)
+- [x] Pressing Enter commits the trimmed input as one chip; `×` removes it. (manual-verify)
+- [x] Empty/whitespace Enter is a no-op; a duplicate pattern is ignored; an invalid glob is rejected with a transient red border (no chip added). (manual-verify)
+- [x] A file matching any chip is fully removed from the file tree (not struck-through), and a folder whose every file is hidden disappears. (manual-verify)
+- [x] A hidden file does not appear in the `Cmd-K` palette. (manual-verify)
+- [x] Checkbox-`excluded` files still render struck-through in the tree — chips and `excluded` do not interfere with each other. (manual-verify)
+- [x] Chips survive a reload under the same project root and do not leak into a different project sharing the port. (manual-verify)
 
 ## Blocked by
 
