@@ -40,13 +40,13 @@ describe('server', () => {
     expect(res.status).toBe(403)
   })
 
-  it('rejects missing, empty, or absolute path at /file with 400', async () => {
+  it('rejects missing or empty path at /file with 400, absolute with 403', async () => {
     const missing = await fetch(`http://127.0.0.1:${handle.port}/file`)
     expect(missing.status).toBe(400)
     const empty = await fetch(`http://127.0.0.1:${handle.port}/file?path=`)
     expect(empty.status).toBe(400)
     const absolute = await fetch(`http://127.0.0.1:${handle.port}/file?path=%2Fetc%2Fpasswd`)
-    expect(absolute.status).toBe(400)
+    expect(absolute.status).toBe(403)
   })
 
   it('rejects path traversal at /open', async () => {
@@ -54,13 +54,13 @@ describe('server', () => {
     expect(res.status).toBe(403)
   })
 
-  it('rejects missing, empty, or absolute path at /open with 400', async () => {
+  it('rejects missing or empty path at /open with 400, absolute with 403', async () => {
     const missing = await fetch(`http://127.0.0.1:${handle.port}/open`)
     expect(missing.status).toBe(400)
     const empty = await fetch(`http://127.0.0.1:${handle.port}/open?path=`)
     expect(empty.status).toBe(400)
     const absolute = await fetch(`http://127.0.0.1:${handle.port}/open?path=%2Fetc%2Fpasswd`)
-    expect(absolute.status).toBe(400)
+    expect(absolute.status).toBe(403)
   })
 
   afterAll(async () => {

@@ -28,7 +28,7 @@ export function useGraphView(graph: Graph) {
       else next.delete(f)
     }
     localStorage.setItem(excludedKey(graph.root), JSON.stringify([...next]))
-    rawDispatch({ type: 'setExclusion', files, exclude })
+    rawDispatch({ type: 'setExcluded', excluded: next })
   }
 
   return {

@@ -28,6 +28,9 @@ export function useCanvasLayout(
   const { fitView, setCenter } = useReactFlow()
   // Path queued by the sidebar/palette to select + center once it's laid out.
   const focusRef = useRef<string | null>(null)
+  // True when focusRef targets a card not yet on canvas — Pass 2 handles the pan
+  // after layout so the focus effect doesn't fire early with position {0,0}.
+  const focusAfterLayoutRef = useRef(false)
   // Path of the card last expanded; pass 1 seeds its new neighbours nearby, then
   // clears it so a later seed/palette add doesn't reuse a stale anchor.
   const expansionAnchorRef = useRef<string | null>(null)
@@ -69,17 +72,40 @@ export function useCanvasLayout(
     layout(nodes, edges, sizes)
       .then((laid) => {
         const pos = new Map(laid.map((n) => [n.id, n.position]))
-        setNodes((prev) => prev.map((n) => ({ ...n, position: pos.get(n.id) ?? n.position })))
+        const focusPath = focusRef.current
+        const isFocusAfterLayout = focusAfterLayoutRef.current
+        setNodes((prev) =>
+          prev.map((n) => ({
+            ...n,
+            position: pos.get(n.id) ?? n.position,
+            ...(isFocusAfterLayout && focusPath && { selected: n.id === focusPath }),
+          })),
+        )
+        // If we're focusing a newly-added card, pan to it instead of fitView.
+        if (isFocusAfterLayout && focusPath) {
+          focusAfterLayoutRef.current = false
+          focusRef.current = null
+          const focusPos = pos.get(focusPath)
+          const focusNode = nodes.find((n) => n.id === focusPath)
+          if (focusPos && focusNode?.measured?.width) {
+            const w = focusNode.measured.width
+            const h = focusNode.measured.height ?? CARD_HEIGHT
+            setCenter(focusPos.x + w / 2, focusPos.y + h / 2, { duration: 400 })
+            return
+          }
+        }
         fitView({ padding: 0.2, duration: 300 })
       })
       .catch((err) => console.error('layout failed', err))
-  }, [nodes, edges, graph, setNodes, fitView])
+  }, [nodes, edges, graph, setNodes, fitView, setCenter])
 
+  // Handles focus for cards already on canvas (layout is a no-op for them).
   useEffect(() => {
+    if (focusAfterLayoutRef.current) return // new card: Pass 2 will handle it
     const path = focusRef.current
     if (!path) return
     const node = nodes.find((n) => n.id === path)
-    if (!node?.measured?.width) return // wait for layout + measurement
+    if (!node?.measured?.width) return
     focusRef.current = null
     setNodes((prev) => prev.map((n) => ({ ...n, selected: n.id === path })))
     const w = node.measured.width
@@ -87,10 +113,11 @@ export function useCanvasLayout(
     setCenter(node.position.x + w / 2, node.position.y + h / 2, { duration: 400 })
   }, [nodes, setNodes, setCenter])
 
-  // Arm focus, then seed: the new card is queued to center the moment it's laid
-  // out. The order is a canvas concern, so it lives here, not in the caller.
+  // Arm focus, then seed. For cards not yet on canvas, flag that layout must
+  // complete first so the focus effect doesn't fire early with position {0,0}.
   function focusOn(path: string) {
     focusRef.current = path
+    focusAfterLayoutRef.current = !nodes.some((n) => n.id === path)
     seed(path)
   }
 

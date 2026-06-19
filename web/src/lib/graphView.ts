@@ -12,7 +12,7 @@ export type GraphViewAction =
   | { type: 'seed'; path: string }
   | { type: 'showSource'; path: string | null }
   | { type: 'remove'; path: string }
-  | { type: 'setExclusion'; files: string[]; exclude: boolean }
+  | { type: 'setExcluded'; excluded: Set<string> }
   | { type: 'clear' }
 
 function applyExpand(
@@ -25,18 +25,6 @@ function applyExpand(
   const expanded = new Set(state.expanded)
   for (const target of related ?? []) if (!state.excluded.has(target)) expanded.add(target)
   return { ...state, expanded }
-}
-
-function applySetExclusion(
-  state: GraphViewState,
-  action: Extract<GraphViewAction, { type: 'setExclusion' }>,
-): GraphViewState {
-  const excluded = new Set(state.excluded)
-  for (const f of action.files) {
-    if (action.exclude) excluded.add(f)
-    else excluded.delete(f)
-  }
-  return { ...state, excluded }
 }
 
 // Pure: excluded is a render-time filter only — it never mutates expanded.
@@ -61,8 +49,8 @@ export function graphView(
         sourcePath: state.sourcePath === action.path ? null : state.sourcePath,
       }
     }
-    case 'setExclusion':
-      return applySetExclusion(state, action)
+    case 'setExcluded':
+      return { ...state, excluded: action.excluded }
     case 'clear':
       return { ...state, expanded: new Set(), sourcePath: null }
   }

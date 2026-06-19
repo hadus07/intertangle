@@ -4,13 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import open from 'open'
 import { getSingletonHighlighter } from 'shiki'
-import { z } from 'zod'
 import type { Graph } from './shared/graph.js'
-
-const PathParam = z
-  .string()
-  .min(1)
-  .refine((p) => !path.isAbsolute(p))
 
 // The one real security boundary: confine a request path to inside `root`.
 // Returns the resolved real path, or null if it escapes (reject as 403).
@@ -77,19 +71,31 @@ async function handleGraph(graph: Graph, res: http.ServerResponse) {
   res.end(JSON.stringify(graph))
 }
 
-async function handleOpen(graph: Graph, url: URL, res: http.ServerResponse) {
-  const parsed = PathParam.safeParse(url.searchParams.get('path'))
-  if (!parsed.success) {
+// Parse ?path=, confine it inside root. Writes the 400/403 itself and returns
+// null on failure; an empty path is rejected so `open()` can't target the dir.
+async function resolveParam(
+  graph: Graph,
+  url: URL,
+  res: http.ServerResponse,
+): Promise<string | null> {
+  const raw = url.searchParams.get('path')
+  if (!raw) {
     res.writeHead(400)
     res.end('Bad request')
-    return
+    return null
   }
-  const real = await resolveInside(graph.root, decodeURIComponent(parsed.data))
+  const real = await resolveInside(graph.root, decodeURIComponent(raw))
   if (!real) {
     res.writeHead(403)
     res.end('Forbidden')
-    return
+    return null
   }
+  return real
+}
+
+async function handleOpen(graph: Graph, url: URL, res: http.ServerResponse) {
+  const real = await resolveParam(graph, url, res)
+  if (!real) return
   try {
     // ponytail: opens in the OS default app for the file type; if that's not
     // the user's editor, this is where an explicit `code`/$EDITOR call goes.
@@ -103,18 +109,8 @@ async function handleOpen(graph: Graph, url: URL, res: http.ServerResponse) {
 }
 
 async function handleFile(graph: Graph, url: URL, res: http.ServerResponse) {
-  const parsed = PathParam.safeParse(url.searchParams.get('path'))
-  if (!parsed.success) {
-    res.writeHead(400)
-    res.end('Bad request')
-    return
-  }
-  const real = await resolveInside(graph.root, decodeURIComponent(parsed.data))
-  if (!real) {
-    res.writeHead(403)
-    res.end('Forbidden')
-    return
-  }
+  const real = await resolveParam(graph, url, res)
+  if (!real) return
   try {
     const stat = await fs.stat(real)
     if (!stat.isFile()) {

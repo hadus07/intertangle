@@ -16,7 +16,7 @@ const actionBase =
 // pass-2 reposition). Position/selected updates keep data ref stable, so memo skips
 // the re-render unless this card's own data actually changed.
 function FileCardNode({ data }: NodeProps) {
-  const { name, path, importCount, importedByCount, externals, onExpand, onShowSource, onRemove } =
+  const { name, path, importCount, importedByCount, externals, importsExpandable, importedByExpandable, onExpand, onShowSource, onRemove } =
     data as Required<FileCardData>
 
   return (
@@ -55,7 +55,7 @@ function FileCardNode({ data }: NodeProps) {
       <div className="flex gap-1.5 px-2.5 pt-1.5 pb-2 border-t border-border">
         <button
           type="button"
-          disabled={importCount === 0}
+          disabled={importCount === 0 || !importsExpandable}
           className="appearance-none bg-transparent outline-none flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-[5px] text-[11px] font-sans cursor-pointer whitespace-nowrap transition-[border-color,color,background] duration-150 tracking-[0.01em] border border-chip-imports text-accent-dim hover:border-accent hover:text-accent-hover hover:bg-accent-wash-faint disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-chip-imports disabled:hover:text-accent-dim disabled:hover:bg-transparent"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => onExpand(path, 'imports')}
@@ -64,7 +64,7 @@ function FileCardNode({ data }: NodeProps) {
         </button>
         <button
           type="button"
-          disabled={importedByCount === 0}
+          disabled={importedByCount === 0 || !importedByExpandable}
           className="appearance-none bg-transparent outline-none flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-[5px] text-[11px] font-sans cursor-pointer whitespace-nowrap transition-[border-color,color,background] duration-150 tracking-[0.01em] border border-chip-importedby text-info-dim hover:border-info hover:text-info-hover hover:bg-info-wash disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-chip-importedby disabled:hover:text-info-dim disabled:hover:bg-transparent"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => onExpand(path, 'importedBy')}
@@ -73,7 +73,7 @@ function FileCardNode({ data }: NodeProps) {
         </button>
       </div>
       {externals.length > 0 && (
-        <div className="flex flex-wrap gap-1 px-2.5 pb-2">
+        <div className="flex flex-wrap gap-1 px-2.5 pb-2 w-0 min-w-full">
           {externals.map((label) => (
             <span
               key={label.name}

@@ -16,6 +16,8 @@ export interface FileCardData extends GraphNode, CardHandlers, Record<string, un
   importCount: number
   importedByCount: number
   externals: ExternalLabel[]
+  importsExpandable: boolean
+  importedByExpandable: boolean
 }
 
 function buildNodes(
@@ -37,6 +39,8 @@ function buildNodes(
         importCount: (graph.forward[id] ?? []).filter((p) => !excluded?.has(p)).length,
         importedByCount: (graph.reverse[id] ?? []).filter((p) => !excluded?.has(p)).length,
         externals: graph.external[id] ?? [],
+        importsExpandable: (graph.forward[id] ?? []).some((p) => !excluded?.has(p) && !visible.has(p)),
+        importedByExpandable: (graph.reverse[id] ?? []).some((p) => !excluded?.has(p) && !visible.has(p)),
       },
       measured: { width: CARD_WIDTH, height: CARD_HEIGHT },
     })

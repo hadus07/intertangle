@@ -140,6 +140,7 @@ export default function FileTree({
       return next.size === prev.size ? prev : next
     })
   }, [activePath])
+  
   function onToggle(path: string, open: boolean) {
     setCollapsed((prev) => {
       const next = new Set(prev)
@@ -148,6 +149,8 @@ export default function FileTree({
       return next
     })
   }
+
+  const allCollapsed = folderPaths(tree).every((p) => collapsed.has(p))
 
   const iconBtnClass =
     'inline-flex items-center justify-center w-5 h-5 p-0 border border-strong rounded-md bg-elevated text-muted cursor-pointer transition-colors duration-120 hover:text-accent-hover hover:border-accent'
@@ -159,11 +162,13 @@ export default function FileTree({
           <div className="flex-1">
             <span className="text-sm font-semibold tracking-tight">intertangle</span>
           </div>
-          <button type="button" className={iconBtnClass} title="Expand all" onClick={expandAll}>
-            <ChevronsUpDown size={12} />
-          </button>
-          <button type="button" className={iconBtnClass} title="Collapse all" onClick={collapseAll}>
-            <ChevronsDownUp size={12} />
+          <button
+            type="button"
+            className={iconBtnClass}
+            title={allCollapsed ? 'Expand all' : 'Collapse all'}
+            onClick={allCollapsed ? expandAll : collapseAll}
+          >
+            {allCollapsed ? <ChevronsUpDown size={12} /> : <ChevronsDownUp size={12} />}
           </button>
         </div>
         <ChipInput chips={chips} onAddChip={onAddChip} onRemoveChip={onRemoveChip} />
