@@ -19,11 +19,11 @@ untouched, which is exactly what makes the hide reversible.
 
 ## Acceptance criteria
 
-- [ ] A file matching any hide chip has its card and all edges touching it removed from the canvas. (manual-verify)
-- [ ] Card chip counts (`imports`/`imported by`) drop net of hidden targets, matching how `excluded` already nets them. (manual-verify)
-- [ ] A card already on the canvas vanishes when a newly-added chip starts matching it (retroactive). (manual-verify)
-- [ ] Removing the chip restores the card and its edges, unchanged and in place; the `expanded` state is never mutated by hiding. (manual-verify)
-- [ ] The existing `projectGraph` exclusion seam still passes — hiding reuses it rather than adding a parallel path. (test)
+- [x] A file matching any hide chip has its card and all edges touching it removed from the canvas. (manual-verify)
+- [x] Card chip counts (`imports`/`imported by`) drop net of hidden targets, matching how `excluded` already nets them. (manual-verify)
+- [x] A card already on the canvas vanishes when a newly-added chip starts matching it (retroactive). (manual-verify)
+- [x] Removing the chip restores the card and its edges, unchanged and in place; the `expanded` state is never mutated by hiding. (manual-verify)
+- [x] The existing `projectGraph` exclusion seam still passes — hiding reuses it rather than adding a parallel path. (test)
 
 ## Blocked by
 

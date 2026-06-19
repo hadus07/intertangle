@@ -50,10 +50,17 @@ export default function App() {
   } = useGraphView(graph)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const panelRef = useRef<ImperativePanelHandle>(null)
+  const { chips, addChip, removeChip } = useHidden(graph.root)
+  const scopedPaths = Object.keys(graph.nodes).filter(inScope)
+  const visiblePaths = chips.length ? scopedPaths.filter((p) => !matchAny(chips, p)) : scopedPaths
+  const hidden = chips.length
+    ? new Set(scopedPaths.filter((p) => matchAny(chips, p)))
+    : new Set<string>()
+  const canvasExcluded = hidden.size ? new Set([...excluded, ...hidden]) : excluded
   const { nodes, edges, onNodesChange, onEdgesChange, focusOn } = useCanvasLayout(
     graph,
     expanded,
-    excluded,
+    canvasExcluded,
     { onExpand: expand, onShowSource: showSource, onRemove: remove },
     seed,
   )
@@ -92,10 +99,6 @@ export default function App() {
             ? { ...e, data: { ...e.data, active: true } }
             : e,
         )
-
-  const { chips, addChip, removeChip } = useHidden(graph.root)
-  const scopedPaths = Object.keys(graph.nodes).filter(inScope)
-  const visiblePaths = chips.length ? scopedPaths.filter((p) => !matchAny(chips, p)) : scopedPaths
 
   return (
     <PanelGroup direction="horizontal" autoSaveId="intertangle:layout" style={{ height: '100vh' }}>
