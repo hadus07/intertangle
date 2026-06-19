@@ -24,7 +24,7 @@ export function FileTree({ paths, activePath, onSeed }: Props) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: deps are the re-run triggers, not body reads
   useEffect(() => {
     activeRef.current?.scrollIntoView({ block: 'center' })
-  }, [activePath, collapsed])
+  }, [activePath])
 
   const collapseAll = () => setCollapsed(new Set(folderPaths(tree)))
   const expandAll = () => setCollapsed(new Set())

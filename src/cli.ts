@@ -1,8 +1,8 @@
 import path from 'node:path'
 import process from 'node:process'
 import open from 'open'
-import { parseRootArg } from './cliArgs.js'
 import { buildGraph } from './buildGraph.js'
+import { parseRootArg } from './cliArgs.js'
 import { startServer } from './server.js'
 import { encodeUrlParams } from './shared/urlParams.js'
 
