@@ -1,6 +1,6 @@
 {
   "name": "intertangle",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Explore TS/JS import graphs on an infinite canvas",
   "type": "module",
   "author": "Ibrohim Bahromov",
