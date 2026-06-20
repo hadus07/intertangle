@@ -1,7 +1,7 @@
 import path from 'node:path'
 import process from 'node:process'
 import open from 'open'
-import { buildGraph } from './buildGraph.js'
+import { buildGraph, toProjectRelative } from './buildGraph.js'
 import { parseRootArg } from './cliArgs.js'
 import { startServer } from './server.js'
 import { encodeUrlParams } from './shared/urlParams.js'
@@ -21,9 +21,8 @@ async function main() {
   const graph = await buildGraph(root, tsconfig)
 
   const scope = scopeArgs
-    .map(arg => path.relative(root, path.resolve(root, arg)))
-    .map(p => p.replaceAll('\\', '/'))
-    .filter(p => !p.startsWith('../') && p.length > 0)
+    .map(arg => toProjectRelative(arg, root))
+    .filter((p): p is string => p !== null)
 
   // File args auto-open as cards; folder args only scope the tree/palette.
   const validSeeds = scope.filter(p => graph.nodes[p])
@@ -37,10 +36,7 @@ async function main() {
   // (sidebar width, deselected files) survives CLI restarts.
   const portEnv = process.env.INTERTANGLE_PORT
   const preferredPort = portEnv ? Number.parseInt(portEnv, 10) : 31718
-  const { port, close } = await startServer(graph, undefined, preferredPort).catch(() =>
-    // ponytail: port in use → ephemeral fallback; that session won't persist UI prefs.
-    startServer(graph, undefined, 0),
-  )
+  const { port, close } = await startServer(graph, preferredPort).catch(() => startServer(graph, 0))
 
   const url = new URL('/', `http://127.0.0.1:${port}`)
   url.search = encodeUrlParams(new Set(validSeeds), scope).toString()

@@ -58,6 +58,14 @@ function FileRow({ node, depth }: { node: TreeNode; depth: number }) {
   )
 }
 
+function computeFolderInclusion(files: string[], excluded: Set<string>) {
+  const includedCount = files.filter(file => !excluded.has(file)).length
+  const allIncluded = includedCount === files.length
+  const someIncluded = includedCount > 0 && !allIncluded
+  const fullyExcluded = includedCount === 0
+  return { allIncluded, someIncluded, fullyExcluded }
+}
+
 export function Row({
   node,
   depth,
@@ -76,10 +84,7 @@ export function Row({
   }
 
   const files = descendantFiles(node)
-  const includedCount = files.filter(f => !excluded.has(f)).length
-  const allIncluded = includedCount === files.length
-  const someIncluded = includedCount > 0 && !allIncluded
-  const fullyExcluded = includedCount === 0
+  const { allIncluded, someIncluded, fullyExcluded } = computeFolderInclusion(files, excluded)
 
   return (
     <details

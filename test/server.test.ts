@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { buildGraph } from '../src/buildGraph.js'
-import { startServer } from '../src/server.js'
+import { startServerWithAssets } from '../src/server.js'
 import { fixtureRoot } from './helpers.js'
 
 const root = fixtureRoot('relative-imports')
@@ -11,7 +11,7 @@ describe('server', () => {
 
   it('serves /graph matching buildGraph', async () => {
     const graph = await buildGraph(root)
-    handle = await startServer(graph, builtAssets)
+    handle = await startServerWithAssets(graph, builtAssets)
 
     const res = await fetch(`http://127.0.0.1:${handle.port}/graph`)
     expect(res.status).toBe(200)

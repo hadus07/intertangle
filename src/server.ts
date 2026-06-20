@@ -46,8 +46,6 @@ export async function highlightFile(absPath: string): Promise<string> {
   return highlighter.codeToHtml(source, { lang, themes: SHIKI_THEMES, defaultColor: false })
 }
 
-const defaultAssetsUrl = new URL('./web/', import.meta.url)
-
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -60,6 +58,8 @@ const MIME_TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
 }
+
+const defaultAssetsUrl = new URL('./web/', import.meta.url)
 
 export interface ServerHandle {
   port: number
@@ -97,8 +97,8 @@ async function handleOpen(graph: Graph, url: URL, res: http.ServerResponse) {
   const real = await resolveParam(graph, url, res)
   if (!real) return
   try {
-    // ponytail: opens in the OS default app for the file type; if that's not
-    // the user's editor, this is where an explicit `code`/$EDITOR call goes.
+    // Opens in the OS default app for the file type; if that's not the user's
+    // editor, this is where an explicit `code`/$EDITOR call goes.
     await open(real)
     res.writeHead(204)
     res.end()
@@ -167,9 +167,13 @@ async function routeRequest(
   return handleStatic(webRoot, assetsUrl, url, res)
 }
 
-export function startServer(
+export function startServer(graph: Graph, port = 0): Promise<ServerHandle> {
+  return startServerWithAssets(graph, defaultAssetsUrl, port)
+}
+
+export function startServerWithAssets(
   graph: Graph,
-  assetsUrl: URL = defaultAssetsUrl,
+  assetsUrl: URL,
   port = 0,
 ): Promise<ServerHandle> {
   const webRoot = fileURLToPath(assetsUrl)

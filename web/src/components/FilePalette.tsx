@@ -56,17 +56,17 @@ export function FilePalette({ paths: allPaths, onSelect }: Props) {
             <Command.Empty className="px-4 py-3 font-mono text-[12px] text-faint">
               no files found
             </Command.Empty>
-            {paths.map(p => {
-              const name = p.split('/').pop() ?? p
+            {paths.map(path => {
+              const name = path.split('/').pop() ?? path
               return (
                 <Command.Item
-                  key={p}
-                  value={p}
-                  onSelect={() => handleSelect(p)}
+                  key={path}
+                  value={path}
+                  onSelect={() => handleSelect(path)}
                   className="px-4 py-2.25 cursor-pointer flex flex-col gap-0.5 border-l-2 border-transparent transition-[background,border-color] duration-100 data-[selected=true]:bg-selected data-[selected=true]:border-l-accent"
                 >
                   <span className="font-mono font-medium text-[12px] text-text">{name}</span>
-                  <span className="font-mono text-[10px] text-muted">{p}</span>
+                  <span className="font-mono text-[10px] text-muted">{path}</span>
                 </Command.Item>
               )
             })}

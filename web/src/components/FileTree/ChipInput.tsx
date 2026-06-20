@@ -4,6 +4,8 @@ import { cn } from '../../lib/cn'
 import { globToRegExp } from '../../lib/glob'
 import { useAppStore, useAppStoreSnapshot } from '../../store'
 
+const INVALID_FLASH_MS = 600
+
 export function ChipInput() {
   const [value, setValue] = useState('')
   const chips = useAppStore(s => s.chips)
@@ -14,7 +16,7 @@ export function ChipInput() {
   function flashInvalid() {
     setInvalid(true)
     if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => setInvalid(false), 600)
+    timerRef.current = setTimeout(() => setInvalid(false), INVALID_FLASH_MS)
   }
 
   function commit() {

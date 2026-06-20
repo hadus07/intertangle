@@ -1,5 +1,5 @@
 import { BaseEdge, type EdgeProps, getBezierPath } from '@xyflow/react'
-import { memo } from 'react'
+import { type CSSProperties, memo } from 'react'
 
 // Gradient encodes import direction: amber (importer) → cyan (imported).
 // userSpaceOnUse + real endpoint coords is required, else the gradient maps to
@@ -25,13 +25,14 @@ function GradientEdgeBase({
   const active = data?.active === true
   // Dimmed edges drop the directional gradient for flat grey, so amber→cyan
   // colour reads only on the selected card's links.
-  const style = active
+  const style: CSSProperties = active
     ? {
         stroke: `url(#g-${id})`,
-        strokeWidth: 1.2,
+        strokeWidth: 1.4,
+        strokeLinecap: 'round',
         filter: 'drop-shadow(0 0 3px var(--iw-accent-glow))',
       }
-    : { stroke: 'var(--iw-edge)', strokeWidth: 1 }
+    : { stroke: 'var(--iw-edge)', strokeWidth: 1, opacity: 0.6 }
   return (
     <>
       {active && (

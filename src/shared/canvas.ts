@@ -124,12 +124,12 @@ export async function layout(
       // vertical order so the hierarchy doesn't jump around on each expansion.
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     },
-    children: nodes.map(n => {
-      const s = sizes?.get(n.id)
+    children: nodes.map(node => {
+      const measuredSize = sizes?.get(node.id)
       return {
-        id: n.id,
-        width: s?.width ?? CARD_WIDTH,
-        height: s?.height ?? n.measured?.height ?? CARD_HEIGHT,
+        id: node.id,
+        width: measuredSize?.width ?? CARD_WIDTH,
+        height: measuredSize?.height ?? node.measured?.height ?? CARD_HEIGHT,
       }
     }),
     edges: edges.map(e => ({

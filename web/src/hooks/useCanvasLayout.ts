@@ -1,9 +1,63 @@
-import { type Edge, type Node, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react'
-import { useEffect, useRef } from 'react'
-import type { CardHandlers } from '~shared/canvas'
-import { CARD_HEIGHT, type FileCardData, layout, projectGraph } from '~shared/canvas'
+import type { Edge, Node } from '@xyflow/react'
+import { useEdgesState, useNodesState, useReactFlow } from '@xyflow/react'
+import { useEffect, useReducer, useRef } from 'react'
+import type { CardHandlers, FileCardData } from '~shared/canvas'
 import type { Graph } from '~shared/graph'
-import { reconcileCanvasNodes } from '../lib/mergeNodes'
+import type { Focus, LayoutResult, Sizes } from '../lib/canvasLayoutEngine'
+import { cameraForNode, layout, measure, project } from '../lib/canvasLayoutEngine'
+import { useLatest } from './useLatest'
+
+const CENTER_DURATION_MS = 400
+const FIT_VIEW_DURATION_MS = 300
+
+type State =
+  | { name: 'idle' }
+  | { name: 'measure'; focus: Focus }
+  | { name: 'layout'; focus: Focus; sizes: Sizes; layoutKey: string }
+  | {
+      name: 'apply'
+      focus: Focus
+      result: LayoutResult
+      layoutKey: string
+    }
+  | { name: 'focus'; path: string }
+
+type Action =
+  | { type: 'measure'; focus: Focus }
+  | { type: 'layout'; focus: Focus; sizes: Sizes; layoutKey: string }
+  | { type: 'laid'; focus: Focus; result: LayoutResult; layoutKey: string }
+  | { type: 'applied' }
+  | { type: 'layoutFailed' }
+  | { type: 'focusImmediate'; path: string }
+  | { type: 'focused' }
+
+function reducer(_state: State, action: Action): State {
+  switch (action.type) {
+    case 'measure':
+      return { name: 'measure', focus: action.focus }
+    case 'layout':
+      return {
+        name: 'layout',
+        focus: action.focus,
+        sizes: action.sizes,
+        layoutKey: action.layoutKey,
+      }
+    case 'laid':
+      return {
+        name: 'apply',
+        focus: action.focus,
+        result: action.result,
+        layoutKey: action.layoutKey,
+      }
+    case 'applied':
+    case 'layoutFailed':
+      return { name: 'idle' }
+    case 'focusImmediate':
+      return { name: 'focus', path: action.path }
+    case 'focused':
+      return { name: 'idle' }
+  }
+}
 
 export function useCanvasLayout(
   graph: Graph | null,
@@ -15,118 +69,215 @@ export function useCanvasLayout(
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<FileCardData>>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const { fitView, setCenter } = useReactFlow()
-  // Path queued by the sidebar/palette to select + center once it's laid out.
-  const focusRef = useRef<string | null>(null)
-  // True when focusRef targets a card not yet on canvas — Pass 2 handles the pan
-  // after layout so the focus effect doesn't fire early with position {0,0}.
-  const focusAfterLayoutRef = useRef(false)
-  // Path of the card last expanded; pass 1 seeds its new neighbours nearby, then
-  // clears it so a later seed/palette add doesn't reuse a stale anchor.
-  const expansionAnchorRef = useRef<string | null>(null)
-  const lastLayoutSig = useRef('')
+  const [state, dispatch] = useReducer(reducer, { name: 'idle' })
 
-  // Pass 1 — node/edge existence + data (pure, no elk). Preserves prior position
-  // and measured size for surviving nodes; seeds new ones near the expand anchor.
+  // Pending work for the projection -> layout -> camera pipeline. The reducer
+  // owns the explicit phase; this ref only holds the cross-render intent that
+  // originates from event handlers (expand anchor, focus that needs layout).
+  const intentRef = useRef<{ anchor: string | null; focus: Focus }>({
+    anchor: null,
+    focus: null,
+  })
+
+  // Generation counter so a stale elk result from an earlier request cannot
+  // overwrite positions from a newer request.
+  const layoutGen = useRef(0)
+
+  // String key of the last laid-out node sizes; only re-layout when ids/sizes change.
+  const lastLayoutKey = useRef<string | null>(null)
+
+  // User callbacks are not reactive inputs to the projection pass. Holding them
+  // in a ref keeps the effect dependency array limited to the data that actually changes.
+  const handlersRef = useLatest({ onExpand, onShowSource, onRemove })
+
+  // Pass 1 — node/edge existence + data (pure, no elk). Preserves prior
+  // position and measured size for surviving nodes; seeds new ones near the
+  // expand anchor so they emerge from under the expanded card.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: handlers are read from a stable ref so Pass 1 only reruns when graph/expanded/excluded change
   useEffect(() => {
     if (!graph) return
-    const { nodes: projected, edges: projectedEdges } = projectGraph(graph, expanded, excluded)
-    const anchorPath = expansionAnchorRef.current
-    expansionAnchorRef.current = null
-    // Record the expansion anchor before forwarding, so the next projection knows
-    // which card the new neighbours should emerge from.
+
+    const { anchor, focus } = intentRef.current
+    intentRef.current = { anchor: null, focus: null }
+
     const handlers: CardHandlers = {
       onExpand: (path, direction) => {
-        expansionAnchorRef.current = path
-        onExpand?.(path, direction)
+        intentRef.current.anchor = path
+        handlersRef.current.onExpand?.(path, direction)
       },
-      onShowSource,
-      onRemove,
+      onShowSource: handlersRef.current.onShowSource,
+      onRemove: handlersRef.current.onRemove,
     }
-    setNodes(prev => reconcileCanvasNodes(prev, projected, handlers, anchorPath))
-    setEdges(projectedEdges)
-  }, [graph, expanded, excluded, onExpand, onShowSource, onRemove, setNodes, setEdges])
 
-  // Pass 2 — re-layout with the sizes React Flow actually measured, so cards
-  // never overlap regardless of external rows or expanded source length.
+    const {
+      nodes: nextNodes,
+      edges: nextEdges,
+      needsLayout,
+      layoutKey,
+    } = project(graph, { visible: expanded, excluded }, nodes, handlers, { anchor, focus })
+
+    setNodes(nextNodes)
+    setEdges(nextEdges)
+
+    if (!needsLayout) {
+      dispatch({ type: 'focusImmediate', path: focus?.path ?? '' })
+      return
+    }
+
+    if (layoutKey !== lastLayoutKey.current) {
+      dispatch({ type: 'measure', focus })
+    }
+  }, [graph, expanded, excluded, setNodes, setEdges])
+
+  // Pass 2/3 — re-layout with measured sizes and move the camera. The reducer
+  // makes the phase explicit: measure -> layout -> apply, plus a fast focus path
+  // for cards that are already on the canvas.
   useEffect(() => {
-    if (!graph || nodes.length === 0) return
-    const sizes = collectMeasuredSizes(nodes)
-    if (!sizes) return // wait until every node is measured
-    const sig = [...sizes]
-      .map(([id, s]) => `${id}:${s.width}:${s.height}`)
-      .sort()
-      .join('|')
-    if (sig === lastLayoutSig.current) return
-    lastLayoutSig.current = sig
-
-    // Returns true if it handled the pan so applyLayout can skip fitView.
-    function panToNewCard(focusPath: string, pos: Map<string, { x: number; y: number }>) {
-      focusAfterLayoutRef.current = false
-      focusRef.current = null
-      const focusPos = pos.get(focusPath)
-      const focusNode = nodes.find(n => n.id === focusPath)
-      if (focusPos && focusNode?.measured?.width) {
-        const w = focusNode.measured.width
-        const h = focusNode.measured.height ?? CARD_HEIGHT
-        setCenter(focusPos.x + w / 2, focusPos.y + h / 2, { duration: 400 })
-        return true
-      }
-      return false
+    switch (state.name) {
+      case 'idle':
+        return runIdlePhase(nodes, lastLayoutKey, dispatch)
+      case 'measure':
+        return runMeasurePhase(nodes, state.focus, lastLayoutKey, dispatch)
+      case 'layout':
+        return runLayoutPhase(
+          { nodes, edges, sizes: state.sizes, layoutKey: state.layoutKey, focus: state.focus },
+          { layoutGen, dispatch },
+        )
+      case 'apply':
+        return runApplyPhase(
+          { result: state.result, layoutKey: state.layoutKey },
+          { setNodes, setCenter, fitView, lastLayoutKey, dispatch },
+        )
+      case 'focus':
+        return runFocusPhase({ nodes, path: state.path }, { setCenter, setNodes, dispatch })
     }
+  }, [state, nodes, edges, setNodes, setCenter, fitView])
 
-    function applyLayout(laid: Node<FileCardData>[]) {
-      const pos = new Map(laid.map(n => [n.id, n.position]))
-      const focusPath = focusRef.current
-      const isFocusAfterLayout = focusAfterLayoutRef.current
-      setNodes(prev =>
-        prev.map(n => ({
-          ...n,
-          position: pos.get(n.id) ?? n.position,
-          ...(isFocusAfterLayout && focusPath && { selected: n.id === focusPath }),
-        })),
-      )
-      if (isFocusAfterLayout && focusPath && panToNewCard(focusPath, pos)) return
-      fitView({ padding: 0.2, duration: 300 })
-    }
-
-    layout(nodes, edges, sizes)
-      .then(applyLayout)
-      .catch(err => console.error('layout failed', err))
-  }, [nodes, edges, graph, setNodes, fitView, setCenter])
-
-  // Handles focus for cards already on canvas (layout is a no-op for them).
-  useEffect(() => {
-    if (focusAfterLayoutRef.current) return // new card: Pass 2 will handle it
-    const path = focusRef.current
-    if (!path) return
-    const node = nodes.find(n => n.id === path)
-    if (!node?.measured?.width) return
-    focusRef.current = null
-    setNodes(prev => prev.map(n => ({ ...n, selected: n.id === path })))
-    const w = node.measured.width
-    const h = node.measured.height ?? CARD_HEIGHT
-    setCenter(node.position.x + w / 2, node.position.y + h / 2, { duration: 400 })
-  }, [nodes, setNodes, setCenter])
-
-  // Arm focus, then seed. For cards not yet on canvas, flag that layout must
-  // complete first so the focus effect doesn't fire early with position {0,0}.
+  // Arm focus, then seed. For cards already on canvas, jump straight to the
+  // focus state; otherwise carry the focus through the projection/layout pipeline.
   function focusOn(path: string) {
-    focusRef.current = path
-    focusAfterLayoutRef.current = !nodes.some(n => n.id === path)
+    const alreadyOnCanvas = nodes.some(n => n.id === path)
+    if (alreadyOnCanvas) {
+      dispatch({ type: 'focusImmediate', path })
+      return
+    }
+    intentRef.current.focus = { path, needsLayout: true }
     seed(path)
   }
 
   return { nodes, edges, onNodesChange, onEdgesChange, focusOn }
 }
 
-function collectMeasuredSizes(
+function runIdlePhase(
   nodes: Node<FileCardData>[],
-): Map<string, { width: number; height: number }> | null {
-  const sizes = new Map<string, { width: number; height: number }>()
-  for (const n of nodes) {
-    const { width, height } = n.measured ?? {}
-    if (!width || !height) return null
-    sizes.set(n.id, { width, height })
+  lastLayoutKey: { current: string | null },
+  dispatch: (action: Action) => void,
+) {
+  if (nodes.length === 0) return
+  const sizes = measure(nodes)
+  if (!sizes || sizes.key === lastLayoutKey.current) return
+  dispatch({ type: 'measure', focus: null })
+}
+
+function runMeasurePhase(
+  nodes: Node<FileCardData>[],
+  focus: Focus,
+  lastLayoutKey: { current: string | null },
+  dispatch: (action: Action) => void,
+) {
+  const sizes = measure(nodes)
+  if (!sizes) return
+  if (sizes.key === lastLayoutKey.current) {
+    dispatch({ type: 'applied' })
+    return
   }
-  return sizes
+  dispatch({ type: 'layout', focus, sizes, layoutKey: sizes.key })
+}
+
+interface LayoutInput {
+  nodes: Node<FileCardData>[]
+  edges: Edge[]
+  sizes: Sizes
+  layoutKey: string
+  focus: Focus
+}
+
+interface LayoutApi {
+  layoutGen: { current: number }
+  dispatch: (action: Action) => void
+}
+
+function runLayoutPhase(
+  { nodes, edges, sizes, layoutKey, focus }: LayoutInput,
+  { layoutGen, dispatch }: LayoutApi,
+) {
+  const gen = ++layoutGen.current
+  layout({ nodes, edges, sizes: sizes.sizes, focus }).then(result => {
+    if (gen !== layoutGen.current) return
+    dispatch({ type: 'laid', focus, result, layoutKey })
+  })
+}
+
+interface ApplyInput {
+  result: LayoutResult
+  layoutKey: string
+}
+
+interface ApplyApi {
+  setNodes: (updater: (prev: Node<FileCardData>[]) => Node<FileCardData>[]) => void
+  setCenter: (x: number, y: number, options?: { duration?: number }) => void
+  fitView: (options?: { padding?: number; duration?: number }) => void
+  lastLayoutKey: { current: string | null }
+  dispatch: (action: Action) => void
+}
+
+function runApplyPhase(
+  { result, layoutKey }: ApplyInput,
+  { setNodes, setCenter, fitView, lastLayoutKey, dispatch }: ApplyApi,
+) {
+  const laidById = new Map(result.nodes.map(n => [n.id, n]))
+  setNodes(prev =>
+    prev.map(node => {
+      const laid = laidById.get(node.id)
+      return laid
+        ? { ...node, position: laid.position, selected: laid.selected }
+        : { ...node, selected: node.id === result.selectedPath }
+    }),
+  )
+
+  if (result.camera.type === 'center') {
+    setCenter(result.camera.x, result.camera.y, { duration: CENTER_DURATION_MS })
+  } else {
+    fitView({ padding: 0.2, duration: FIT_VIEW_DURATION_MS })
+  }
+
+  lastLayoutKey.current = layoutKey
+  dispatch({ type: 'applied' })
+}
+
+interface FocusApi {
+  setNodes: (updater: (prev: Node<FileCardData>[]) => Node<FileCardData>[]) => void
+  setCenter: (x: number, y: number, options?: { duration?: number }) => void
+  dispatch: (action: Action) => void
+}
+
+interface FocusInput {
+  nodes: Node<FileCardData>[]
+  path: string
+}
+
+function runFocusPhase({ nodes, path }: FocusInput, { setCenter, setNodes, dispatch }: FocusApi) {
+  const node = nodes.find(n => n.id === path)
+  if (!node) return
+  const action = cameraForNode(node, node.position)
+  if (action.type === 'center') {
+    setCenter(action.x, action.y, { duration: CENTER_DURATION_MS })
+  }
+  setNodes(prev =>
+    prev.map(n => ({
+      ...n,
+      selected: n.id === path,
+    })),
+  )
+  dispatch({ type: 'focused' })
 }

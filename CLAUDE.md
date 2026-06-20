@@ -33,6 +33,7 @@ go stale (restart to refresh them).
 
 - Prefer function declarations over arrow-function expressions for named functions with block bodies — `function foo() {}` not `const foo = () => {}`. Keep arrows for: one-liner expressions (`const key = (x) => \`prefix:${x}\``), inline object-returning lambdas, and callbacks passed directly to JSX or array methods.
 - Prefer named exports over default exports everywhere — `export function Foo` / `export const foo`, never `export default`.
+- **React Compiler is enabled.** Do not add manual `useMemo` or `useCallback`; the compiler handles memoization. If a value genuinely must be stable across renders and the compiler can’t prove it, extract it to module scope instead.
 
 ## Locked scaffold decisions (do not re-litigate)
 
