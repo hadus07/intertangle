@@ -118,7 +118,7 @@ export async function layout(
       // matching chip, less crossing over the card.
       'elk.direction': 'LEFT',
       'elk.spacing.nodeNode': '40',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '60',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '120',
       // Honor the (alphabetical) input order within each layer instead of
       // letting elk reshuffle to minimize crossings — keeps cards in a stable
       // vertical order so the hierarchy doesn't jump around on each expansion.
